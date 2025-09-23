@@ -2,39 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Campus Companion App Design System
+   Incorporating Neo-brutalism, Glassmorphism, and Bold Minimalism
+   All colors MUST be HSL.
 */
 
 @layer base {
   :root {
+    /* Campus Companion Color Palette */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 220 15% 8%;
 
+    /* Deep Blue Academic Theme */
+    --primary: 215 100% 15%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 215 100% 25%;
+    --primary-dark: 215 100% 8%;
+
+    /* Fresh Teal/Green Accent */
+    --secondary: 175 85% 45%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-light: 175 85% 65%;
+    --secondary-dark: 175 85% 25%;
+
+    /* Glassmorphic Surfaces */
+    --glass: 0 0% 100%;
+    --glass-foreground: 220 15% 8%;
+    --glass-border: 220 20% 90%;
+
+    /* Neo-brutalist Elements */
+    --brutal: 220 15% 8%;
+    --brutal-foreground: 0 0% 98%;
+    --brutal-accent: 45 100% 50%;
+
+    /* Card & Surface Colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 15% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 15% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 8% 46%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --accent: 175 85% 95%;
+    --accent-foreground: 220 15% 8%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 100% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Glassmorphism Effects */
+    --glass-bg: hsla(0, 0%, 100%, 0.8);
+    --glass-border: hsla(220, 20%, 90%, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    --glass-blur: blur(12px);
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Neo-brutalist Shadows */
+    --brutal-shadow: 4px 4px 0px hsl(var(--brutal));
+    --brutal-shadow-hover: 6px 6px 0px hsl(var(--brutal));
+
+    /* Neumorphic Shadows */
+    --neuro-shadow: 6px 6px 12px rgba(163, 177, 198, 0.4), -6px -6px 12px rgba(255, 255, 255, 0.8);
+    --neuro-shadow-inset: inset 6px 6px 12px rgba(163, 177, 198, 0.4), inset -6px -6px 12px rgba(255, 255, 255, 0.8);
 
     --radius: 0.5rem;
 
@@ -100,6 +133,66 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+  }
+}
+
+/* Campus Companion Component Classes */
+@layer components {
+  /* Glassmorphic Elements */
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl;
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-panel {
+    @apply backdrop-blur-lg bg-white/70 border border-white/20 rounded-xl;
+  }
+
+  /* Neo-brutalist Elements */
+  .brutal-card {
+    @apply bg-card border-2 border-brutal rounded-none;
+    box-shadow: var(--brutal-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .brutal-card:hover {
+    box-shadow: var(--brutal-shadow-hover);
+    transform: translate(-2px, -2px);
+  }
+
+  .brutal-btn {
+    @apply bg-primary text-primary-foreground border-2 border-brutal rounded-none px-6 py-3 font-bold uppercase tracking-wide;
+    box-shadow: var(--brutal-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .brutal-btn:hover {
+    box-shadow: var(--brutal-shadow-hover);
+    transform: translate(-2px, -2px);
+  }
+
+  /* Neumorphic Elements */
+  .neuro-btn {
+    @apply bg-background rounded-2xl px-6 py-3 font-medium;
+    box-shadow: var(--neuro-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .neuro-btn:active {
+    box-shadow: var(--neuro-shadow-inset);
+  }
+
+  /* Academic UI Components */
+  .schedule-card {
+    @apply glass-card p-4 hover:scale-105 transition-all duration-300 cursor-pointer;
+  }
+
+  .ai-chat-bubble {
+    @apply bg-secondary/10 backdrop-blur-sm border border-secondary/20 rounded-2xl p-4 max-w-xs;
+  }
+
+  .student-chat-bubble {
+    @apply bg-primary/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-4 max-w-xs ml-auto;
   }
 }
