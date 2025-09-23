@@ -1,12 +1,13 @@
-import { CalendarDays, User, Bell, BookOpen } from "lucide-react";
+import { CalendarDays, User, Bell, BookOpen, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
   studentName: string;
   upcomingCount: number;
+  onSignOut?: () => void;
 }
 
-export default function DashboardHeader({ studentName, upcomingCount }: DashboardHeaderProps) {
+export default function DashboardHeader({ studentName, upcomingCount, onSignOut }: DashboardHeaderProps) {
   return (
     <header className="glass-card p-6 mb-6">
       <div className="flex items-center justify-between">
@@ -33,6 +34,13 @@ export default function DashboardHeader({ studentName, upcomingCount }: Dashboar
           <Button variant="outline" size="icon">
             <User className="w-5 h-5" />
           </Button>
+
+          {onSignOut && (
+            <Button variant="outline" size="sm" onClick={onSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          )}
         </div>
       </div>
       
