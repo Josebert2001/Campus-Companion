@@ -2,6 +2,8 @@ import { useState } from "react";
 import { MessageCircle, Send, Brain, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatMessage {
   id: string;
@@ -20,9 +22,10 @@ export default function AIStudyCompanion() {
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -32,18 +35,42 @@ export default function AIStudyCompanion() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          message: currentInput,
+          context: "University student using Campus Companion app"
+        }
+      });
+
+      if (error) throw error;
+
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: "I'd be happy to help you with that! Could you provide more details about what you're studying?",
+        text: data.response,
         isUser: false,
         timestamp: new Date(),
       };
+      
       setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast.error("Failed to get AI response. Please try again.");
+      
+      const errorResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm sorry, I'm having trouble responding right now. Please try again later.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const quickActions = [
@@ -103,7 +130,7 @@ export default function AIStudyCompanion() {
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             className="flex-1"
           />
-          <Button onClick={handleSendMessage} size="icon">
+          <Button onClick={handleSendMessage} size="icon" disabled={isLoading}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
