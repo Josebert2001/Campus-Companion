@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          course: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          priority: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          priority: string
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          code: string | null
+          created_at: string
+          credits: number | null
+          id: string
+          instructor: string | null
+          name: string
+          semester: string | null
+          updated_at: string
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          credits?: number | null
+          id?: string
+          instructor?: string | null
+          name: string
+          semester?: string | null
+          updated_at?: string
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          credits?: number | null
+          id?: string
+          instructor?: string | null
+          name?: string
+          semester?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -50,6 +131,98 @@ export type Database = {
           updated_at?: string
           user_id?: string
           year_of_study?: number | null
+        }
+        Relationships: []
+      }
+      schedules: {
+        Row: {
+          course_id: string | null
+          course_name: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          instructor: string | null
+          location: string | null
+          start_time: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          course_name: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          instructor?: string | null
+          location?: string | null
+          start_time: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string | null
+          course_name?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          instructor?: string | null
+          location?: string | null
+          start_time?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_notes: {
+        Row: {
+          ai_generated: boolean | null
+          content: string | null
+          course: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          summary: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          content?: string | null
+          course?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          content?: string | null
+          course?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
