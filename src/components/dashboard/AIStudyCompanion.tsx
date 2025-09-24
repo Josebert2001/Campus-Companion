@@ -79,14 +79,14 @@ export default function AIStudyCompanion() {
   ];
 
   return (
-    <div className="glass-card p-0 overflow-hidden">
+    <div className="glass-card p-0 overflow-hidden h-fit">
       <div className="p-4 bg-gradient-to-r from-primary to-secondary text-white">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-lg">
             <MessageCircle className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold">AI Study Companion</h3>
+            <h3 className="font-semibold mobile-text">AI Study Companion</h3>
             <p className="text-xs opacity-90">Ask questions, get summaries, practice quizzes</p>
           </div>
         </div>
@@ -94,13 +94,13 @@ export default function AIStudyCompanion() {
 
       <div className="p-4">
         {/* Quick Actions */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           {quickActions.map((action, index) => (
             <Button
               key={index}
               variant="outline"
               size="sm"
-              className="text-xs"
+              className="text-xs flex-1 sm:flex-none"
               onClick={() => setInputValue(action.action)}
             >
               <action.icon className="w-3 h-3 mr-1" />
@@ -110,27 +110,42 @@ export default function AIStudyCompanion() {
         </div>
 
         {/* Chat Messages */}
-        <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
+        <div className="space-y-3 max-h-48 sm:max-h-64 overflow-y-auto mb-4 scroll-smooth">
           {messages.map((message) => (
             <div
               key={message.id}
               className={message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}
             >
-              <p className="text-sm">{message.text}</p>
+              <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
             </div>
           ))}
+          {isLoading && (
+            <div className="ai-chat-bubble">
+              <div className="flex items-center gap-2">
+                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
+                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
+                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Input */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask me anything..."
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            className="flex-1"
+            className="flex-1 text-sm"
+            disabled={isLoading}
           />
-          <Button onClick={handleSendMessage} size="icon" disabled={isLoading}>
+          <Button 
+            onClick={handleSendMessage} 
+            size="icon" 
+            disabled={isLoading || !inputValue.trim()}
+            className="flex-shrink-0"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>

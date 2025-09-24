@@ -141,58 +141,192 @@
 @layer components {
   /* Glassmorphic Elements */
   .glass-card {
-    @apply backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl;
+    @apply backdrop-blur-xl bg-white/85 border border-white/20 rounded-2xl shadow-lg;
     box-shadow: var(--glass-shadow);
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    @apply bg-white/90 border-white/30;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
   }
 
   .glass-panel {
-    @apply backdrop-blur-lg bg-white/70 border border-white/20 rounded-xl;
+    @apply backdrop-blur-lg bg-white/75 border border-white/15 rounded-xl shadow-md;
+    transition: all 0.2s ease;
+  }
+
+  .glass-panel:hover {
+    @apply bg-white/80 border-white/25;
   }
 
   /* Neo-brutalist Elements */
   .brutal-card {
-    @apply bg-card border-2 border-brutal rounded-none;
+    @apply bg-card border-2 border-brutal rounded-lg;
     box-shadow: var(--brutal-shadow);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .brutal-card:hover {
     box-shadow: var(--brutal-shadow-hover);
-    transform: translate(-2px, -2px);
+    transform: translate(-3px, -3px);
   }
 
   .brutal-btn {
-    @apply bg-primary text-primary-foreground border-2 border-brutal rounded-none px-6 py-3 font-bold uppercase tracking-wide;
+    @apply bg-primary text-primary-foreground border-2 border-brutal rounded-lg px-6 py-3 font-bold uppercase tracking-wide;
     box-shadow: var(--brutal-shadow);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .brutal-btn:hover {
     box-shadow: var(--brutal-shadow-hover);
-    transform: translate(-2px, -2px);
+    transform: translate(-3px, -3px);
+    @apply bg-primary/90;
   }
 
   /* Neumorphic Elements */
   .neuro-btn {
-    @apply bg-background rounded-2xl px-6 py-3 font-medium;
+    @apply bg-background rounded-2xl px-6 py-3 font-medium border border-border/50;
     box-shadow: var(--neuro-shadow);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .neuro-btn:hover {
+    @apply bg-accent/50;
+    box-shadow: var(--neuro-shadow), 0 0 20px rgba(var(--primary), 0.1);
   }
 
   .neuro-btn:active {
     box-shadow: var(--neuro-shadow-inset);
+    transform: scale(0.98);
   }
 
   /* Academic UI Components */
   .schedule-card {
-    @apply glass-card p-4 hover:scale-105 transition-all duration-300 cursor-pointer;
+    @apply glass-card p-4 hover:scale-[1.02] transition-all duration-300 cursor-pointer;
+  }
+
+  .schedule-card:hover {
+    @apply shadow-xl;
   }
 
   .ai-chat-bubble {
-    @apply bg-secondary/10 backdrop-blur-sm border border-secondary/20 rounded-2xl p-4 max-w-xs;
+    @apply bg-secondary/10 backdrop-blur-sm border border-secondary/20 rounded-2xl p-4 max-w-xs shadow-sm;
+    animation: slideInLeft 0.3s ease-out;
   }
 
   .student-chat-bubble {
-    @apply bg-primary/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-4 max-w-xs ml-auto;
+    @apply bg-primary/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-4 max-w-xs ml-auto shadow-sm;
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    @apply animate-pulse bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%];
+    animation: shimmer 2s infinite;
+  }
+
+  /* Responsive Grid */
+  .responsive-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .responsive-grid-sm {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  /* Mobile-first responsive utilities */
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-heading {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+}
+
+/* Animations */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply rounded-xl;
+  }
+  
+  .brutal-card {
+    @apply rounded-md;
+  }
+  
+  .schedule-card:hover {
+    transform: none;
+  }
+  
+  .brutal-card:hover {
+    transform: translate(-1px, -1px);
+  }
+}
+
+/* Focus states for accessibility */
+.glass-card:focus-within,
+.brutal-card:focus-within {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-card {
+    @apply bg-background border-2 border-foreground;
+  }
+  
+  .glass-panel {
+    @apply bg-background border border-foreground;
   }
 }

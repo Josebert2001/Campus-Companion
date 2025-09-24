@@ -29,11 +29,11 @@ export function SignInForm({ onToggleMode }: SignInFormProps) {
   };
 
   return (
-    <div className="glass-card p-8 w-full max-w-md">
+    <div className="glass-card p-6 sm:p-8 w-full max-w-md">
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your Campus Companion account</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary">Welcome Back</h1>
+          <p className="text-muted-foreground mobile-text">Sign in to your Campus Companion account</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -47,7 +47,7 @@ export function SignInForm({ onToggleMode }: SignInFormProps) {
                 placeholder="your.email@uniuyo.edu.ng"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-10 mobile-text"
                 required
               />
             </div>
@@ -63,7 +63,7 @@ export function SignInForm({ onToggleMode }: SignInFormProps) {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
+                className="pl-10 mobile-text"
                 required
               />
             </div>
@@ -71,7 +71,7 @@ export function SignInForm({ onToggleMode }: SignInFormProps) {
           
           <Button
             type="submit"
-            className="w-full neuro-btn"
+            className="w-full neuro-btn mobile-text"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -86,11 +86,11 @@ export function SignInForm({ onToggleMode }: SignInFormProps) {
         </form>
         
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Don't have an account?{' '}
             <button
               onClick={onToggleMode}
-              className="text-primary hover:underline font-medium"
+              className="text-primary hover:underline font-medium mobile-text"
             >
               Sign up here
             </button>

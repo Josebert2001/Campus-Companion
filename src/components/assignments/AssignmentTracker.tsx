@@ -176,16 +176,16 @@ export default function AssignmentTracker() {
   });
 
   return (
-    <div className="glass-card p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="glass-card p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Assignments & Exams</h2>
-          <p className="text-muted-foreground">Track your academic deadlines</p>
+          <h2 className="mobile-heading font-bold text-foreground">Assignments & Exams</h2>
+          <p className="text-muted-foreground mobile-text">Track your academic deadlines</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="neuro-btn">
+            <Button className="neuro-btn w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Task
             </Button>
@@ -205,6 +205,7 @@ export default function AssignmentTracker() {
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Assignment title"
+                  className="mobile-text"
                   required
                 />
               </div>
@@ -216,6 +217,7 @@ export default function AssignmentTracker() {
                   value={formData.course}
                   onChange={(e) => setFormData(prev => ({ ...prev, course: e.target.value }))}
                   placeholder="Course name"
+                  className="mobile-text"
                   required
                 />
               </div>
@@ -227,6 +229,7 @@ export default function AssignmentTracker() {
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Assignment details"
+                  className="mobile-text"
                   rows={3}
                 />
               </div>
@@ -238,6 +241,7 @@ export default function AssignmentTracker() {
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  className="mobile-text"
                   required
                 />
               </div>
@@ -249,7 +253,7 @@ export default function AssignmentTracker() {
                     id="priority"
                     value={formData.priority}
                     onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as Assignment['priority'] }))}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-2 border rounded-md mobile-text"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -263,7 +267,7 @@ export default function AssignmentTracker() {
                     id="type"
                     value={formData.type}
                     onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as Assignment['type'] }))}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-2 border rounded-md mobile-text"
                   >
                     <option value="assignment">Assignment</option>
                     <option value="exam">Exam</option>
@@ -272,7 +276,7 @@ export default function AssignmentTracker() {
                 </div>
               </div>
               
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full mobile-text">
                 {editingAssignment ? 'Update Assignment' : 'Add Assignment'}
               </Button>
             </form>
@@ -288,31 +292,33 @@ export default function AssignmentTracker() {
           const isDueSoon = daysUntilDue <= 2 && daysUntilDue >= 0;
 
           return (
-            <div key={assignment.id} className="brutal-card p-4 hover:scale-[1.02] transition-all">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-foreground">{assignment.title}</h3>
-                    <Badge className={getPriorityColor(assignment.priority)}>
+            <div key={assignment.id} className="brutal-card p-4 hover:scale-[1.01] sm:hover:scale-[1.02] transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-foreground mobile-text truncate">{assignment.title}</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge className={`${getPriorityColor(assignment.priority)} text-xs`}>
                       {assignment.priority}
                     </Badge>
-                    <Badge className={getStatusColor(assignment.status)}>
+                      <Badge className={`${getStatusColor(assignment.status)} text-xs`}>
                       {assignment.status}
                     </Badge>
+                    </div>
                   </div>
                   
-                  <p className="text-sm text-primary mb-1">{assignment.course}</p>
-                  <p className="text-sm text-muted-foreground mb-3">{assignment.description}</p>
+                  <p className="text-xs sm:text-sm text-primary mb-1 truncate">{assignment.course}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2">{assignment.description}</p>
                   
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                      <span className="truncate">{new Date(assignment.dueDate).toLocaleDateString()}</span>
                     </div>
                     
                     <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-orange-600' : 'text-muted-foreground'}`}>
                       {isOverdue || isDueSoon ? <AlertTriangle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                      <span>
+                      <span className="truncate">
                         {isOverdue 
                           ? `${Math.abs(daysUntilDue)} days overdue`
                           : daysUntilDue === 0 
@@ -324,7 +330,7 @@ export default function AssignmentTracker() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     onClick={() => toggleStatus(assignment.id)}
                     variant="ghost"
@@ -356,9 +362,9 @@ export default function AssignmentTracker() {
         })}
 
         {assignments.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-8 sm:py-12 text-muted-foreground">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No assignments yet. Click "Add Task" to get started!</p>
+            <p className="mobile-text">No assignments yet. Click "Add Task" to get started!</p>
           </div>
         )}
       </div>

@@ -40,16 +40,16 @@ export default function QuickStats({ stats }: { stats: StatsData }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="responsive-grid-sm mb-6">
       {statItems.map((item, index) => (
-        <div key={index} className="brutal-card p-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${item.bgColor}`}>
+        <div key={index} className="brutal-card p-4 min-h-[100px] flex items-center">
+          <div className="flex items-center gap-3 w-full">
+            <div className={`p-2 rounded-lg ${item.bgColor} flex-shrink-0`}>
               <item.icon className={`w-5 h-5 ${item.color}`} />
             </div>
-            <div>
-              <div className="text-2xl font-bold text-foreground">{item.value}</div>
-              <div className="text-sm text-muted-foreground">{item.label}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xl sm:text-2xl font-bold text-foreground truncate">{item.value}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground truncate">{item.label}</div>
             </div>
           </div>
         </div>
