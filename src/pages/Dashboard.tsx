@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, BookOpen, MessageSquare, BarChart3 } from 'lucide-react';
+import { Calendar, BookOpen, MessageSquare, BarChart3, Loader2 } from 'lucide-react';
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
 import TodaySchedule from "@/components/dashboard/TodaySchedule";
 import AIStudyCompanion from "@/components/dashboard/AIStudyCompanion";
 import AssignmentTracker from "@/components/assignments/AssignmentTracker";
+import { useStats } from "@/hooks/useStats";
+import { useTodaySchedule } from "@/hooks/useTodaySchedule";
 
 interface DashboardProps {
   user: any;
@@ -14,41 +16,22 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onSignOut }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Fetch real data from database
+  const { stats, loading: statsLoading, error: statsError } = useStats();
+  const { schedule, loading: scheduleLoading, error: scheduleError } = useTodaySchedule();
 
-  // Mock data for demonstration
-  const statsData = {
-    todayClasses: 4,
-    pendingAssignments: 7,
-    completedTasks: 12,
-    upcomingExams: 2,
-  };
-
-  const scheduleData = [
-    {
-      id: "1",
-      course: "Advanced Mathematics",
-      time: "09:00 - 10:30",
-      location: "Room 204",
-      type: "lecture" as const,
-      instructor: "Dr. Smith",
-    },
-    {
-      id: "2", 
-      course: "Computer Science Lab",
-      time: "14:00 - 16:00",
-      location: "Lab B12",
-      type: "lab" as const,
-      instructor: "Prof. Williams",
-    },
-    {
-      id: "3",
-      course: "Physics Tutorial",
-      time: "16:30 - 17:30",
-      location: "Room 105",
-      type: "tutorial" as const,
-      instructor: "Dr. Brown",
-    },
-  ];
+  // Show loading state if either data is still loading
+  if (statsLoading || scheduleLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-secondary/10 flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/20 to-secondary/10">
@@ -56,7 +39,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         {/* Header */}
         <DashboardHeader 
           studentName={user?.user_metadata?.full_name || user?.email || "Student"}
-          upcomingCount={3}
+          upcomingCount={stats.pendingAssignments + stats.upcomingExams}
           onSignOut={onSignOut}
         />
 
@@ -83,11 +66,21 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <QuickStats stats={statsData} />
+            {statsError && (
+              <div className="glass-card p-4 border-destructive/20 bg-destructive/5">
+                <p className="text-destructive text-sm">Error loading stats: {statsError}</p>
+              </div>
+            )}
+            <QuickStats stats={stats} />
             
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <TodaySchedule schedule={scheduleData} />
+                {scheduleError && (
+                  <div className="glass-card p-4 border-destructive/20 bg-destructive/5 mb-4">
+                    <p className="text-destructive text-sm">Error loading schedule: {scheduleError}</p>
+                  </div>
+                )}
+                <TodaySchedule schedule={schedule} />
               </div>
               <div>
                 <AIStudyCompanion />
@@ -97,7 +90,12 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
 
           {/* Schedule Tab */}
           <TabsContent value="schedule" className="space-y-6">
-            <TodaySchedule schedule={scheduleData} />
+            {scheduleError && (
+              <div className="glass-card p-4 border-destructive/20 bg-destructive/5">
+                <p className="text-destructive text-sm">Error loading schedule: {scheduleError}</p>
+              </div>
+            )}
+            <TodaySchedule schedule={schedule} />
             {/* Add weekly/monthly calendar view here later */}
           </TabsContent>
 
