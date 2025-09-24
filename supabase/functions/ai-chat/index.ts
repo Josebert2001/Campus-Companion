@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,14 +14,70 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context } = await req.json();
-    const groqApiKey = Deno.env.get('GROQ_API_KEY');
-
-    if (!groqApiKey) {
-      throw new Error('GROQ_API_KEY is not configured');
+    // Get JWT from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log('Processing AI chat request:', { message, context });
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { message, context } = await req.json();
+    
+    // Input validation
+    if (!message || typeof message !== 'string') {
+      return new Response(JSON.stringify({ error: 'Message is required and must be a string' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (message.length > 2000) {
+      return new Response(JSON.stringify({ error: 'Message too long. Maximum 2000 characters allowed' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (context && (typeof context !== 'string' || context.length > 1000)) {
+      return new Response(JSON.stringify({ error: 'Context must be a string with maximum 1000 characters' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    if (!groqApiKey) {
+      console.error('GROQ_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Sanitize inputs
+    const sanitizedMessage = message.trim();
+    const sanitizedContext = context ? context.trim() : '';
+
+    console.log('Processing AI chat request for user:', user.id);
 
     const systemPrompt = `You are an AI study companion for university students. You help with:
 - Answering questions about course materials
@@ -29,7 +86,8 @@ serve(async (req) => {
 - Explaining complex concepts
 - Providing study tips and strategies
 
-Context about the student: ${context || 'No specific context provided'}
+Context about the student: ${sanitizedContext || 'No specific context provided'}
+User ID: ${user.id}
 
 Be helpful, encouraging, and educational. Keep responses concise but informative.`;
 
@@ -43,7 +101,7 @@ Be helpful, encouraging, and educational. Keep responses concise but informative
         model: 'llama-3.1-405b-reasoning',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: sanitizedMessage }
         ],
         max_tokens: 800,
         temperature: 0.3,
@@ -52,8 +110,11 @@ Be helpful, encouraging, and educational. Keep responses concise but informative
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Groq API error:', errorData);
-      throw new Error(`Groq API error: ${response.status}`);
+      console.error('Groq API error:', response.status, errorData);
+      return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
@@ -66,7 +127,7 @@ Be helpful, encouraging, and educational. Keep responses concise but informative
     });
   } catch (error) {
     console.error('Error in ai-chat function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
