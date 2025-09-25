@@ -74,7 +74,7 @@ serve(async (req) => {
     }
 
     // Allow overriding model via secret; default to a widely available model
-    const groqModel = Deno.env.get('GROQ_MODEL') || 'llama3-70b-8192';
+    const groqModel = Deno.env.get('GROQ_MODEL') || 'llama-3.1-8b-instant';
 
     // Sanitize inputs
     const sanitizedMessage = message.trim();
