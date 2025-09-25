@@ -36,13 +36,15 @@ export default function DashboardHeader({ studentName, upcomingCount, onSignOut 
           </Button>
 
           {onSignOut && (
-            <Button variant="outline" size="sm" onClick={onSignOut} className="hidden sm:inline-flex">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-            <Button variant="outline" size="icon" onClick={onSignOut} className="sm:hidden">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={onSignOut} className="hidden sm:inline-flex">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+              <Button variant="outline" size="icon" onClick={onSignOut} className="sm:hidden">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
           )}
         </div>
       </div>
