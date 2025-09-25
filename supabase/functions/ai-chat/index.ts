@@ -82,17 +82,26 @@ serve(async (req) => {
 
     console.log('Processing AI chat request for user:', user.id);
 
-    const systemPrompt = `You are an AI study companion for university students. You help with:
+    // Fetch user profile to get their name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const userName = profile?.full_name || 'there';
+
+    const systemPrompt = `You are Campus Companion, an AI study buddy for university students. You help with:
 - Answering questions about course materials
 - Creating study guides and summaries
 - Generating practice quizzes
 - Explaining complex concepts
 - Providing study tips and strategies
 
-Context about the student: ${sanitizedContext || 'No specific context provided'}
-User ID: ${user.id}
+The student's name is ${userName}. Greet them warmly by name and be encouraging.
+Context: ${sanitizedContext || 'University student using Campus Companion app'}
 
-Be helpful, encouraging, and educational. Keep responses concise but informative.`;
+Be helpful, friendly, and educational. Keep responses concise but informative.`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
