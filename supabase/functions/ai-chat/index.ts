@@ -73,6 +73,9 @@ serve(async (req) => {
       });
     }
 
+    // Allow overriding model via secret; default to a widely available model
+    const groqModel = Deno.env.get('GROQ_MODEL') || 'llama3-70b-8192';
+
     // Sanitize inputs
     const sanitizedMessage = message.trim();
     const sanitizedContext = context ? context.trim() : '';
@@ -98,7 +101,7 @@ Be helpful, encouraging, and educational. Keep responses concise but informative
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: groqModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: sanitizedMessage }
