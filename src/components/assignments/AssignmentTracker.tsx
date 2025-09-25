@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Calendar, Clock, AlertTriangle, CheckCircle2, Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Assignment {
   id: string;
@@ -20,38 +22,9 @@ interface Assignment {
 }
 
 export default function AssignmentTracker() {
-  const [assignments, setAssignments] = useState<Assignment[]>([
-    {
-      id: '1',
-      title: 'Calculus Problem Set 5',
-      course: 'Advanced Mathematics',
-      description: 'Complete problems 1-20 from Chapter 8',
-      dueDate: '2025-01-30',
-      priority: 'high',
-      status: 'pending',
-      type: 'assignment'
-    },
-    {
-      id: '2',
-      title: 'Physics Lab Report',
-      course: 'Physics Lab',
-      description: 'Analyze oscillation experiments and write detailed report',
-      dueDate: '2025-02-02',
-      priority: 'medium',
-      status: 'in-progress',
-      type: 'assignment'
-    },
-    {
-      id: '3',
-      title: 'Midterm Examination',
-      course: 'Computer Science',
-      description: 'Covers algorithms, data structures, and complexity analysis',
-      dueDate: '2025-02-05',
-      priority: 'high',
-      status: 'pending',
-      type: 'exam'
-    }
-  ]);
+  const { user } = useAuth();
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
@@ -73,26 +46,93 @@ export default function AssignmentTracker() {
 
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch assignments from Supabase
+  useEffect(() => {
+    if (user) {
+      fetchAssignments();
+    }
+  }, [user]);
+
+  const fetchAssignments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+
+      // Map database fields to component interface
+      const mappedAssignments = data.map(assignment => ({
+        id: assignment.id,
+        title: assignment.title,
+        course: assignment.course,
+        description: assignment.description || '',
+        dueDate: assignment.due_date,
+        priority: assignment.priority as 'low' | 'medium' | 'high',
+        status: assignment.status as 'pending' | 'in-progress' | 'completed',
+        type: assignment.type as 'assignment' | 'exam' | 'project'
+      }));
+
+      setAssignments(mappedAssignments);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      toast({ title: "Failed to load assignments", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingAssignment) {
-      // Update existing assignment
-      setAssignments(prev => prev.map(assignment => 
-        assignment.id === editingAssignment.id 
-          ? { ...assignment, ...formData, status: assignment.status }
-          : assignment
-      ));
-      toast({ title: "Assignment updated successfully!" });
-    } else {
-      // Create new assignment
-      const newAssignment: Assignment = {
-        id: Date.now().toString(),
-        ...formData,
-        status: 'pending'
-      };
-      setAssignments(prev => [...prev, newAssignment]);
-      toast({ title: "Assignment added successfully!" });
+    if (!user) return;
+
+    try {
+      if (editingAssignment) {
+        // Update existing assignment
+        const { error } = await supabase
+          .from('assignments')
+          .update({
+            title: formData.title,
+            course: formData.course,
+            description: formData.description,
+            due_date: formData.dueDate,
+            priority: formData.priority,
+            type: formData.type
+          })
+          .eq('id', editingAssignment.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        toast({ title: "Assignment updated successfully!" });
+      } else {
+        // Create new assignment
+        const { error } = await supabase
+          .from('assignments')
+          .insert({
+            title: formData.title,
+            course: formData.course,
+            description: formData.description,
+            due_date: formData.dueDate,
+            priority: formData.priority,
+            type: formData.type,
+            status: 'pending',
+            user_id: user.id
+          });
+
+        if (error) throw error;
+        toast({ title: "Assignment added successfully!" });
+      }
+
+      // Refresh the assignments list
+      await fetchAssignments();
+    } catch (error) {
+      console.error('Error saving assignment:', error);
+      toast({ title: "Failed to save assignment", variant: "destructive" });
+      return;
     }
 
     // Reset form
@@ -121,21 +161,52 @@ export default function AssignmentTracker() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setAssignments(prev => prev.filter(assignment => assignment.id !== id));
-    toast({ title: "Assignment deleted" });
+  const handleDelete = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Assignment deleted" });
+      // Refresh the assignments list
+      await fetchAssignments();
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast({ title: "Failed to delete assignment", variant: "destructive" });
+    }
   };
 
-  const toggleStatus = (id: string) => {
-    setAssignments(prev => prev.map(assignment => {
-      if (assignment.id === id) {
-        const statusOrder = ['pending', 'in-progress', 'completed'];
-        const currentIndex = statusOrder.indexOf(assignment.status);
-        const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
-        return { ...assignment, status: nextStatus as Assignment['status'] };
-      }
-      return assignment;
-    }));
+  const toggleStatus = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const assignment = assignments.find(a => a.id === id);
+      if (!assignment) return;
+
+      const statusOrder = ['pending', 'in-progress', 'completed'];
+      const currentIndex = statusOrder.indexOf(assignment.status);
+      const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+
+      const { error } = await supabase
+        .from('assignments')
+        .update({ status: nextStatus })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the assignments list
+      await fetchAssignments();
+    } catch (error) {
+      console.error('Error updating assignment status:', error);
+      toast({ title: "Failed to update status", variant: "destructive" });
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -286,7 +357,12 @@ export default function AssignmentTracker() {
 
       {/* Assignment List */}
       <div className="space-y-4">
-        {sortedAssignments.map((assignment) => {
+        {loading ? (
+          <div className="text-center py-8 sm:py-12 text-muted-foreground">
+            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="mobile-text">Loading assignments...</p>
+          </div>
+        ) : sortedAssignments.map((assignment) => {
           const daysUntilDue = getDaysUntilDue(assignment.dueDate);
           const isOverdue = daysUntilDue < 0;
           const isDueSoon = daysUntilDue <= 2 && daysUntilDue >= 0;
@@ -361,7 +437,7 @@ export default function AssignmentTracker() {
           );
         })}
 
-        {assignments.length === 0 && (
+        {!loading && assignments.length === 0 && (
           <div className="text-center py-8 sm:py-12 text-muted-foreground">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="mobile-text">No assignments yet. Click "Add Task" to get started!</p>
