@@ -98,7 +98,7 @@ Be helpful, encouraging, and educational. Keep responses concise but informative
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-405b-reasoning',
+        model: 'llama-3.1-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: sanitizedMessage }
