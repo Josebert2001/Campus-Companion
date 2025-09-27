@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, Send, Brain, Sparkles, Zap, Users } from "lucide-react";
+import { MessageCircle, Send, Brain, Sparkles, Zap, Users, BookOpen, Calendar, Languages, FileText, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,17 +10,23 @@ interface ChatMessage {
   text: string;
   isUser: boolean;
   timestamp: Date;
-  processingType?: 'multi_agent' | 'single_model';
+  processingType?: 'student_multi_agent' | 'single_model' | 'error_fallback';
+  studentContext?: {
+    name?: string;
+    university?: string;
+    course?: string;
+    year?: number;
+  };
 }
 
 export default function AIStudyCompanion() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
-      text: "Hi! I'm your AI study companion powered by a multi-agent system. I can help with complex questions, research, problem-solving, and study materials using specialized AI agents working together!",
+      text: "Hi! I'm your Campus Companion AI, powered by specialized student-focused agents. I can help you with studying, research, assignments, time management, and academic success using advanced AI designed specifically for University of Uyo students! 🎓",
       isUser: false,
       timestamp: new Date(),
-      processingType: 'multi_agent'
+      processingType: 'student_multi_agent'
     },
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -45,7 +51,7 @@ export default function AIStudyCompanion() {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           message: currentInput,
-          context: "University student using Campus Companion app"
+          context: "University of Uyo student seeking academic assistance through Campus Companion"
         }
       });
 
@@ -53,23 +59,24 @@ export default function AIStudyCompanion() {
 
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: data.response || "I'm having trouble responding right now. Please try again.",
+        text: data.response || "I'm having trouble helping you right now, but I'm here to support your academic success! Please try again.",
         isUser: false,
         timestamp: new Date(),
-        processingType: data.processing_type || 'single_model'
+        processingType: data.processing_type || 'single_model',
+        studentContext: data.student_context
       };
       
       setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
       console.error('Error getting AI response:', error);
-      toast.error("Failed to get AI response. Please try again.");
+      toast.error("I'm having trouble connecting right now. Please try again!");
       
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: "I'm sorry, I'm having trouble responding right now. Please try again later.",
+        text: "I'm sorry, I'm having trouble connecting right now. But don't worry - I'm here to help you succeed! Please try again in a moment. 💪",
         isUser: false,
         timestamp: new Date(),
-        processingType: 'single_model'
+        processingType: 'error_fallback'
       };
       setMessages(prev => [...prev, errorResponse]);
     } finally {
@@ -78,9 +85,42 @@ export default function AIStudyCompanion() {
   };
 
   const quickActions = [
-    { icon: Brain, label: "Quiz Me", action: "Create a comprehensive quiz with explanations on my recent study topics" },
-    { icon: Sparkles, label: "Research", action: "Help me research and analyze a complex academic topic with multiple perspectives" },
-    { icon: Users, label: "Study Plan", action: "Create a detailed study plan breaking down complex subjects into manageable parts" },
+    { 
+      icon: Brain, 
+      label: "Explain Concept", 
+      action: "Help me understand a difficult concept by breaking it down step-by-step with examples",
+      category: "study_help"
+    },
+    { 
+      icon: BookOpen, 
+      label: "Research Help", 
+      action: "Help me find academic sources and create proper citations for my research project",
+      category: "research"
+    },
+    { 
+      icon: Calendar, 
+      label: "Study Schedule", 
+      action: "Create a personalized study schedule and help me manage my assignments and deadlines",
+      category: "task_management"
+    },
+    { 
+      icon: Languages, 
+      label: "Simplify Text", 
+      action: "Help me understand complex academic text by explaining it in simpler terms",
+      category: "language"
+    },
+    { 
+      icon: FileText, 
+      label: "Citation Help", 
+      action: "Show me how to properly cite sources and format my academic paper",
+      category: "citation"
+    },
+    { 
+      icon: GraduationCap, 
+      label: "Exam Prep", 
+      action: "Help me prepare for my upcoming exam with study strategies and practice questions",
+      category: "study_help"
+    },
   ];
 
   return (
@@ -89,30 +129,30 @@ export default function AIStudyCompanion() {
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-lg">
             <div className="relative">
-              <MessageCircle className="w-5 h-5" />
-              <Zap className="w-2 h-2 absolute -top-1 -right-1 text-yellow-300" />
+              <GraduationCap className="w-5 h-5" />
+              <Zap className="w-2 h-2 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
             </div>
           </div>
           <div>
-            <h3 className="font-semibold mobile-text">Multi-Agent AI Companion</h3>
-            <p className="text-xs opacity-90">Powered by specialized AI agents for complex reasoning</p>
+            <h3 className="font-semibold mobile-text">Campus Companion AI</h3>
+            <p className="text-xs opacity-90">Student-focused AI agents for academic success</p>
           </div>
         </div>
       </div>
 
       <div className="p-4">
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
           {quickActions.map((action, index) => (
             <Button
               key={index}
               variant="outline"
               size="sm"
-              className="text-xs flex-1 sm:flex-none hover:bg-primary/10"
+              className="text-xs h-auto py-2 px-2 flex flex-col items-center gap-1 hover:bg-primary/10 hover:border-primary/30 transition-all"
               onClick={() => setInputValue(action.action)}
             >
-              <action.icon className="w-3 h-3 mr-1" />
-              {action.label}
+              <action.icon className="w-3 h-3" />
+              <span className="text-xs leading-tight text-center">{action.label}</span>
             </Button>
           ))}
         </div>
@@ -123,10 +163,19 @@ export default function AIStudyCompanion() {
             <div key={message.id}>
               <div className={message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}>
                 <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
-                {!message.isUser && message.processingType === 'multi_agent' && (
+                {!message.isUser && message.processingType === 'student_multi_agent' && (
                   <div className="flex items-center gap-1 mt-2 opacity-70">
+                    <GraduationCap className="w-3 h-3" />
+                    <span className="text-xs">Student-focused AI response</span>
+                  </div>
+                )}
+                {!message.isUser && message.studentContext && (
+                  <div className="flex items-center gap-1 mt-2 opacity-60">
                     <Users className="w-3 h-3" />
-                    <span className="text-xs">Multi-agent response</span>
+                    <span className="text-xs">
+                      {message.studentContext.course && `${message.studentContext.course} • `}
+                      {message.studentContext.university || 'University of Uyo'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -135,11 +184,11 @@ export default function AIStudyCompanion() {
           {isLoading && (
             <div className="ai-chat-bubble">
               <div className="flex items-center gap-2 mb-2">
-                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
-                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
-                <div className="loading-skeleton w-2 h-2 rounded-full"></div>
+                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse"></div>
+                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
               </div>
-              <p className="text-xs opacity-70">AI agents are collaborating on your response...</p>
+              <p className="text-xs opacity-70">Student-focused AI agents are working on your response...</p>
             </div>
           )}
         </div>
@@ -149,7 +198,7 @@ export default function AIStudyCompanion() {
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask complex questions, request research, or get detailed explanations..."
+            placeholder="Ask about concepts, get study help, research assistance, or academic guidance..."
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             className="flex-1 text-sm"
             disabled={isLoading}
@@ -158,10 +207,17 @@ export default function AIStudyCompanion() {
             onClick={handleSendMessage} 
             size="icon" 
             disabled={isLoading || !inputValue.trim()}
-            className="flex-shrink-0 hover:bg-primary/90"
+            className="flex-shrink-0 hover:bg-primary/90 transition-all"
           >
             <Send className="w-4 h-4" />
           </Button>
+        </div>
+        
+        {/* Student Success Message */}
+        <div className="mt-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            💡 I'm here to help you succeed at University of Uyo!
+          </p>
         </div>
       </div>
     </div>
