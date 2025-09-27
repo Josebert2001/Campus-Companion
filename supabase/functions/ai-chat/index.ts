@@ -603,7 +603,7 @@ serve(async (req) => {
       .from('profiles')
       .select('full_name, course, year_of_study, university')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     const userName = profile?.full_name || 'Student';
     const sanitizedMessage = message.trim();
