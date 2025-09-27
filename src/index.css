@@ -212,13 +212,21 @@
   }
 
   .ai-chat-bubble {
-    @apply bg-secondary/10 backdrop-blur-sm border border-secondary/20 rounded-2xl p-4 max-w-xs shadow-sm;
+    @apply bg-secondary/10 backdrop-blur-sm border border-secondary/20 rounded-2xl p-4 max-w-sm shadow-sm;
     animation: slideInLeft 0.3s ease-out;
   }
 
   .student-chat-bubble {
     @apply bg-primary/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-4 max-w-xs ml-auto shadow-sm;
     animation: slideInRight 0.3s ease-out;
+  }
+
+  .ai-response-formatted {
+    @apply space-y-1;
+  }
+
+  .ai-response-formatted h4 {
+    @apply border-l-2 border-primary/30 pl-2;
   }
 
   /* Loading States */

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MessageCircle, Send, Brain, Sparkles, Zap, Users, BookOpen, Calendar, Languages, FileText, GraduationCap } from "lucide-react";
+import AIResponseFormatter from "./AIResponseFormatter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,11 +159,15 @@ export default function AIStudyCompanion() {
         </div>
 
         {/* Chat Messages */}
-        <div className="space-y-3 max-h-48 sm:max-h-64 overflow-y-auto mb-4 scroll-smooth">
+        <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto mb-4 scroll-smooth">
           {messages.map((message) => (
             <div key={message.id}>
               <div className={message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}>
-                <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
+                {message.isUser ? (
+                  <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
+                ) : (
+                  <AIResponseFormatter content={message.text} />
+                )}
                 {!message.isUser && message.processingType === 'student_multi_agent' && (
                   <div className="flex items-center gap-1 mt-2 opacity-70">
                     <GraduationCap className="w-3 h-3" />
