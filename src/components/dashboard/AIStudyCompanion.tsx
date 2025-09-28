@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import VoiceInput from "@/components/voice/VoiceInput";
+import VoiceOutput from "@/components/voice/VoiceOutput";
+import ImageUpload from "@/components/vision/ImageUpload";
 
 interface ChatMessage {
   id: string;
@@ -12,6 +15,8 @@ interface ChatMessage {
   isUser: boolean;
   timestamp: Date;
   processingType?: 'student_multi_agent' | 'single_model' | 'error_fallback';
+  imageUrl?: string;
+  isVoiceInput?: boolean;
   studentContext?: {
     name?: string;
     university?: string;
@@ -33,19 +38,22 @@ export default function AIStudyCompanion() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const handleSendMessage = async (message?: string, imageUrl?: string, isVoice?: boolean) => {
+    const textToSend = message || inputValue;
+    if (!textToSend.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: textToSend,
       isUser: true,
       timestamp: new Date(),
+      imageUrl,
+      isVoiceInput: isVoice,
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputValue;
-    setInputValue("");
+    const currentInput = textToSend;
+    if (!message) setInputValue("");
     setIsLoading(true);
 
     try {
@@ -163,24 +171,47 @@ export default function AIStudyCompanion() {
           {messages.map((message) => (
             <div key={message.id}>
               <div className={message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}>
+                {message.imageUrl && (
+                  <img 
+                    src={message.imageUrl} 
+                    alt="Study material" 
+                    className="max-w-32 h-auto rounded mb-2" 
+                  />
+                )}
+                
                 {message.isUser ? (
-                  <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
-                ) : (
-                  <AIResponseFormatter content={message.text} />
-                )}
-                {!message.isUser && message.processingType === 'student_multi_agent' && (
-                  <div className="flex items-center gap-1 mt-2 opacity-70">
-                    <GraduationCap className="w-3 h-3" />
-                    <span className="text-xs">Student-focused AI response</span>
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
+                    {message.isVoiceInput && (
+                      <div className="flex items-center gap-1 text-xs opacity-60">
+                        <MessageCircle className="w-3 h-3" />
+                        Voice input
+                      </div>
+                    )}
                   </div>
-                )}
-                {!message.isUser && message.studentContext && (
-                  <div className="flex items-center gap-1 mt-2 opacity-60">
-                    <Users className="w-3 h-3" />
-                    <span className="text-xs">
-                      {message.studentContext.course && `${message.studentContext.course} • `}
-                      {message.studentContext.university || 'University of Uyo'}
-                    </span>
+                ) : (
+                  <div className="space-y-2">
+                    <AIResponseFormatter content={message.text} />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {message.processingType === 'student_multi_agent' && (
+                          <div className="flex items-center gap-1 opacity-70">
+                            <GraduationCap className="w-3 h-3" />
+                            <span className="text-xs">Multi-agent AI</span>
+                          </div>
+                        )}
+                        {message.studentContext && (
+                          <div className="flex items-center gap-1 opacity-60">
+                            <Users className="w-3 h-3" />
+                            <span className="text-xs">
+                              {message.studentContext.course && `${message.studentContext.course} • `}
+                              {message.studentContext.university || 'University of Uyo'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <VoiceOutput text={message.text} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -198,7 +229,17 @@ export default function AIStudyCompanion() {
           )}
         </div>
 
-        {/* Input */}
+        {/* Voice and Vision Input */}
+        <div className="mb-3 space-y-2">
+          <ImageUpload 
+            onImageAnalyzed={(analysis, imageUrl) => {
+              handleSendMessage(`Please help me understand this study material: ${analysis}`, imageUrl);
+            }}
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Text Input with Voice */}
         <div className="flex gap-2 items-end">
           <Input
             value={inputValue}
@@ -208,8 +249,14 @@ export default function AIStudyCompanion() {
             className="flex-1 text-sm"
             disabled={isLoading}
           />
+          
+          <VoiceInput
+            onTranscription={(text) => handleSendMessage(text, undefined, true)}
+            disabled={isLoading}
+          />
+          
           <Button 
-            onClick={handleSendMessage} 
+            onClick={() => handleSendMessage()} 
             size="icon" 
             disabled={isLoading || !inputValue.trim()}
             className="flex-shrink-0 hover:bg-primary/90 transition-all"

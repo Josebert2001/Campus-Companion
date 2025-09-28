@@ -1,1 +1,13 @@
 project_id = "rirzudpvpjuzurztysui"
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.voice-to-text]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.vision-analysis]
+verify_jwt = false
