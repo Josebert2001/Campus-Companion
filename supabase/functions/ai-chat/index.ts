@@ -23,39 +23,30 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   };
 }
 
-// Student-Centered Multi-Agent System Configuration
-const STUDENT_AGENT_MODELS = {
-  orchestrator: 'llama-3.1-70b-versatile', // GPT-OSS 120B equivalent
-  study_helper: 'llama-3.1-8b-instant', // GPT-OSS 20B equivalent for concept explanation
-  reference_research: 'llama-3.1-70b-versatile', // Llama 3.3 70B equivalent for research
-  task_manager: 'mixtral-8x7b-32768', // Qwen 3 32B equivalent for structured tasks
-  multimodal: 'llama-3.2-11b-vision-preview', // Vision model for notes/slides
-  language_helper: 'llama-3.1-70b-versatile', // Multilingual support
-  citation: 'llama-3.1-8b-instant', // Citation and reference formatting
-  safety: 'llama-guard-3-8b', // Content moderation
-  polisher: 'llama-3.1-8b-instant', // Student-friendly style enhancement
+// Simplified Agent Models for focused responses
+const AGENT_MODELS = {
+  router: 'llama-3.1-8b-instant',      // Fast routing decisions
+  study_helper: 'llama-3.1-8b-instant', // Quick concept explanations
+  time_manager: 'llama-3.1-8b-instant', // Scheduling and organization
+  researcher: 'llama-3.1-70b-versatile', // Research and references
+  motivator: 'llama-3.1-8b-instant',    // Encouragement and mindset
+  unifier: 'llama-3.1-8b-instant',     // Consistent voice
 };
 
-interface StudentSubTask {
-  id: string;
-  type: 'study_help' | 'research' | 'task_management' | 'multimodal' | 'language' | 'citation';
-  content: string;
-  priority: number;
-  student_context?: string;
-  subject?: string;
-}
-
-interface StudentAgentResult {
-  taskId: string;
-  result: string;
+interface RoutingDecision {
+  selected_agent: 'study_helper' | 'time_manager' | 'researcher' | 'motivator';
   confidence: number;
-  citations?: string[];
-  study_tips?: string[];
-  next_steps?: string[];
+  reason: string;
 }
 
-// Enhanced Groq API call with student-specific error handling
-async function callGroqModel(model: string, messages: any[], maxTokens: number = 800, temperature: number = 0.3): Promise<string> {
+interface AgentResponse {
+  content: string;
+  agent_used: string;
+  confidence: number;
+}
+
+// Enhanced Groq API call with better error handling
+async function callGroqModel(model: string, messages: any[], maxTokens: number = 400, temperature: number = 0.3): Promise<string> {
   const groqApiKey = Deno.env.get('GROQ_API_KEY');
   if (!groqApiKey) {
     throw new Error('GROQ_API_KEY not configured');
@@ -79,494 +70,259 @@ async function callGroqModel(model: string, messages: any[], maxTokens: number =
   if (!response.ok) {
     const errorData = await response.text();
     console.error(`Groq API error for model ${model}:`, response.status, errorData);
-    throw new Error(`AI service temporarily unavailable. Please try again.`);
+    throw new Error(`AI service temporarily unavailable`);
   }
 
   const data = await response.json();
   return data.choices[0].message.content;
 }
 
-// Student-Focused Orchestrator Agent
-async function studentOrchestratorAgent(query: string, context: string, userName: string, userProfile?: any): Promise<StudentSubTask[]> {
-  const systemPrompt = `You are the Campus Companion Orchestrator, specialized in helping university students succeed academically.
+// Smart Router - Decides which agent to use
+async function routeUserQuery(query: string, context: string): Promise<RoutingDecision> {
+  const systemPrompt = `You are the Campus Companion Router. Analyze the student's query and decide which agent should handle it.
 
-Your role: Analyze student queries and break them into subtasks for specialized student-focused agents.
-
-Available Student Agents:
-- study_help: Explain concepts, solve problems, break down complex topics, provide study strategies
-- research: Find academic sources, research papers, textbook references, create bibliographies
-- task_management: Schedule management, assignment tracking, deadline reminders, study planning
-- multimodal: Analyze lecture slides, handwritten notes, diagrams, visual content
-- language: Translate content, explain in simpler terms, multilingual support
-- citation: Format references, create proper citations, academic writing help
-
-Student Profile:
-- Name: ${userName}
-- University: University of Uyo
-- Context: ${context}
-${userProfile ? `- Course: ${userProfile.course || 'Not specified'}
-- Year: ${userProfile.year_of_study || 'Not specified'}` : ''}
+Available Agents:
+- study_helper: Explain concepts, solve problems, answer academic questions
+- time_manager: Create schedules, manage deadlines, organize tasks
+- researcher: Find sources, summarize content, provide references
+- motivator: Encourage, reduce stress, provide mindset support
 
 Student Query: "${query}"
+Context: ${context}
 
-Analyze this query and create subtasks that will best help this student learn and succeed. Focus on:
-1. Educational value and learning outcomes
-2. Practical study assistance
-3. Academic skill development
-4. Time management and organization
-
-Return ONLY a JSON array of subtasks with this structure:
-[{
-  "id": "unique_id",
-  "type": "agent_type",
-  "content": "specific_task_description",
-  "priority": 1-5,
-  "student_context": "why_this_helps_learning",
-  "subject": "academic_subject_if_applicable"
-}]`;
+Respond with ONLY this JSON format:
+{
+  "selected_agent": "agent_name",
+  "confidence": 0.85,
+  "reason": "brief explanation"
+}`;
 
   try {
-    const response = await callGroqModel(STUDENT_AGENT_MODELS.orchestrator, [
+    const response = await callGroqModel(AGENT_MODELS.router, [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: query }
-    ], 1200, 0.2);
+    ], 200, 0.1);
 
     const cleanResponse = response.replace(/```json\n?|\n?```/g, '').trim();
-    const tasks = JSON.parse(cleanResponse);
+    const routing = JSON.parse(cleanResponse);
     
-    // Validate and ensure we have at least one task
-    if (!Array.isArray(tasks) || tasks.length === 0) {
-      throw new Error('Invalid task structure');
+    // Validate routing decision
+    const validAgents = ['study_helper', 'time_manager', 'researcher', 'motivator'];
+    if (!validAgents.includes(routing.selected_agent)) {
+      throw new Error('Invalid agent selection');
     }
     
-    return tasks;
+    return routing;
   } catch (error) {
-    console.error('Student orchestrator parsing error:', error);
-    // Intelligent fallback based on query content
+    console.error('Routing error:', error);
+    // Intelligent fallback based on keywords
     const queryLower = query.toLowerCase();
-    let taskType: StudentSubTask['type'] = 'study_help';
     
-    if (queryLower.includes('schedule') || queryLower.includes('deadline') || queryLower.includes('assignment')) {
-      taskType = 'task_management';
-    } else if (queryLower.includes('research') || queryLower.includes('reference') || queryLower.includes('source')) {
-      taskType = 'research';
-    } else if (queryLower.includes('translate') || queryLower.includes('explain simply')) {
-      taskType = 'language';
+    if (queryLower.includes('schedule') || queryLower.includes('deadline') || queryLower.includes('time')) {
+      return { selected_agent: 'time_manager', confidence: 0.7, reason: 'Keyword-based routing to time management' };
+    } else if (queryLower.includes('research') || queryLower.includes('find') || queryLower.includes('source')) {
+      return { selected_agent: 'researcher', confidence: 0.7, reason: 'Keyword-based routing to research' };
+    } else if (queryLower.includes('stress') || queryLower.includes('motivation') || queryLower.includes('help me focus')) {
+      return { selected_agent: 'motivator', confidence: 0.7, reason: 'Keyword-based routing to motivation' };
     }
     
-    return [{
-      id: 'fallback-1',
-      type: taskType,
-      content: query,
-      priority: 1,
-      student_context: 'Direct assistance with student query',
-      subject: 'General'
-    }];
+    return { selected_agent: 'study_helper', confidence: 0.6, reason: 'Default routing to study help' };
   }
 }
 
-// Study Helper Agent - Core learning assistance
-async function studyHelperAgent(task: StudentSubTask, context: string, userName: string): Promise<StudentAgentResult> {
-  const systemPrompt = `You are the Study Helper Agent for Campus Companion, specialized in helping University of Uyo students learn and understand academic concepts.
-
-Your expertise:
-- Break down complex topics into digestible parts
-- Provide step-by-step explanations
-- Create study strategies and memory techniques
-- Offer practice problems and examples
-- Connect concepts to real-world applications
-- Adapt explanations to student's level
+// Study Helper Agent - Concise concept explanations
+async function studyHelperAgent(query: string, context: string, userName: string): Promise<AgentResponse> {
+  const systemPrompt = `You are the Study Helper for Campus Companion. Help University of Uyo students understand concepts quickly.
 
 Student: ${userName}
 Context: ${context}
-Subject: ${task.subject || 'General'}
-Learning Goal: ${task.student_context}
 
-Task: ${task.content}
+Provide CONCISE help that:
+- Answers the question directly (2-3 sentences max)
+- Explains concepts simply
+- Gives one practical tip
+- Stays focused and brief
 
-Provide a comprehensive educational response that:
-1. Explains the concept clearly and simply
-2. Breaks down complex ideas step-by-step
-3. Includes practical examples
-4. Offers study tips and memory techniques
-5. Suggests next learning steps
-6. Encourages the student's learning journey
+Keep responses short, clear, and immediately helpful.`;
 
-Format your response to be engaging, encouraging, and educational.`;
-
-  const result = await callGroqModel(STUDENT_AGENT_MODELS.study_helper, [
+  const result = await callGroqModel(AGENT_MODELS.study_helper, [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: task.content }
-  ], 1000, 0.4);
+    { role: 'user', content: query }
+  ], 300, 0.4);
 
   return {
-    taskId: task.id,
-    result,
-    confidence: 0.90,
-    citations: [],
-    study_tips: ['Review the concept regularly', 'Practice with examples', 'Connect to previous knowledge'],
-    next_steps: ['Try practice problems', 'Discuss with classmates', 'Apply to real scenarios']
+    content: result,
+    agent_used: 'study_helper',
+    confidence: 0.90
   };
 }
 
-// Reference & Research Agent - Academic sources and citations
-async function referenceResearchAgent(task: StudentSubTask, context: string, userName: string): Promise<StudentAgentResult> {
-  const systemPrompt = `You are the Reference & Research Agent for Campus Companion, specialized in helping University of Uyo students find and use academic sources.
-
-Your expertise:
-- Identify relevant academic sources and references
-- Explain research methodologies
-- Help with literature reviews
-- Provide citation formats (APA, MLA, Chicago)
-- Suggest keywords for database searches
-- Evaluate source credibility
+// Time Manager Agent - Quick scheduling help
+async function timeManagerAgent(query: string, context: string, userName: string): Promise<AgentResponse> {
+  const systemPrompt = `You are the Time Manager for Campus Companion. Help University of Uyo students organize their time efficiently.
 
 Student: ${userName}
 Context: ${context}
-Subject: ${task.subject || 'General'}
-Research Goal: ${task.student_context}
 
-Task: ${task.content}
+Provide CONCISE scheduling help that:
+- Gives direct, actionable advice (2-3 sentences)
+- Focuses on immediate next steps
+- Provides simple time management tips
+- Stays practical and brief
 
-Provide comprehensive research assistance that:
-1. Suggests relevant academic sources and databases
-2. Provides proper citation examples
-3. Explains how to evaluate source credibility
-4. Offers search strategies and keywords
-5. Includes both primary and secondary sources
-6. Considers Nigerian and African academic perspectives when relevant
+Keep responses short and immediately actionable.`;
 
-Focus on helping the student develop strong research skills.`;
-
-  const result = await callGroqModel(STUDENT_AGENT_MODELS.reference_research, [
+  const result = await callGroqModel(AGENT_MODELS.time_manager, [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: task.content }
-  ], 1200, 0.3);
+    { role: 'user', content: query }
+  ], 300, 0.3);
 
   return {
-    taskId: task.id,
-    result,
-    confidence: 0.85,
-    citations: [
-      'Academic databases (JSTOR, PubMed, Google Scholar)',
-      'University library resources',
-      'Peer-reviewed journals',
-      'Reputable academic publishers'
-    ],
-    study_tips: ['Always verify source credibility', 'Use multiple sources', 'Take detailed notes'],
-    next_steps: ['Search academic databases', 'Consult librarian', 'Create bibliography']
+    content: result,
+    agent_used: 'time_manager',
+    confidence: 0.95
   };
 }
 
-// Task Manager Agent - Schedule and assignment management
-async function taskManagerAgent(task: StudentSubTask, context: string, userName: string): Promise<StudentAgentResult> {
-  const systemPrompt = `You are the Task Manager Agent for Campus Companion, specialized in helping University of Uyo students organize their academic life.
-
-Your expertise:
-- Create study schedules and timetables
-- Track assignment deadlines
-- Prioritize tasks effectively
-- Develop time management strategies
-- Plan exam preparation
-- Balance academic and personal life
+// Researcher Agent - Quick research assistance
+async function researcherAgent(query: string, context: string, userName: string): Promise<AgentResponse> {
+  const systemPrompt = `You are the Researcher for Campus Companion. Help University of Uyo students find information quickly.
 
 Student: ${userName}
 Context: ${context}
-Management Goal: ${task.student_context}
 
-Task: ${task.content}
+Provide CONCISE research help that:
+- Points to specific sources or search strategies (2-3 sentences)
+- Gives immediate actionable steps
+- Focuses on the most relevant information
+- Stays brief and targeted
 
-Provide structured organizational assistance that:
-1. Creates clear, actionable plans
-2. Prioritizes tasks by importance and urgency
-3. Suggests realistic timeframes
-4. Includes buffer time for unexpected issues
-5. Considers the Nigerian academic calendar
-6. Provides accountability strategies
+Keep responses short and immediately useful for research.`;
 
-Format your response with clear structure, timelines, and actionable steps.`;
-
-  const result = await callGroqModel(STUDENT_AGENT_MODELS.task_manager, [
+  const result = await callGroqModel(AGENT_MODELS.researcher, [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: task.content }
-  ], 1000, 0.2);
+    { role: 'user', content: query }
+  ], 400, 0.3);
 
   return {
-    taskId: task.id,
-    result,
-    confidence: 0.95,
-    citations: ['Time management best practices', 'Academic planning strategies'],
-    study_tips: ['Use digital calendars', 'Set realistic goals', 'Review progress weekly'],
-    next_steps: ['Create detailed schedule', 'Set up reminders', 'Track progress daily']
+    content: result,
+    agent_used: 'researcher',
+    confidence: 0.85
   };
 }
 
-// Language Helper Agent - Multilingual and simplification support
-async function languageHelperAgent(task: StudentSubTask, context: string, userName: string): Promise<StudentAgentResult> {
-  const systemPrompt = `You are the Language Helper Agent for Campus Companion, specialized in making academic content accessible to University of Uyo students.
-
-Your expertise:
-- Simplify complex academic language
-- Translate between English and local languages
-- Explain technical terminology
-- Adapt content for different comprehension levels
-- Provide cultural context for international concepts
-- Support multilingual learning
+// Motivator Agent - Quick encouragement
+async function motivatorAgent(query: string, context: string, userName: string): Promise<AgentResponse> {
+  const systemPrompt = `You are the Motivator for Campus Companion. Encourage University of Uyo students with quick, uplifting support.
 
 Student: ${userName}
 Context: ${context}
-Language Goal: ${task.student_context}
 
-Task: ${task.content}
+Provide CONCISE motivation that:
+- Acknowledges their feelings (1 sentence)
+- Gives encouraging perspective (1-2 sentences)
+- Suggests one practical action
+- Stays positive and brief
 
-Provide language assistance that:
-1. Simplifies complex academic language
-2. Explains technical terms clearly
-3. Provides cultural context when needed
-4. Offers multiple ways to understand concepts
-5. Considers Nigerian English and local expressions
-6. Makes content more accessible and relatable
+Keep responses short, warm, and immediately encouraging.`;
 
-Focus on clarity, cultural relevance, and comprehension.`;
-
-  const result = await callGroqModel(STUDENT_AGENT_MODELS.language_helper, [
+  const result = await callGroqModel(AGENT_MODELS.motivator, [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: task.content }
-  ], 1000, 0.5);
+    { role: 'user', content: query }
+  ], 250, 0.6);
 
   return {
-    taskId: task.id,
-    result,
-    confidence: 0.88,
-    citations: ['Language learning resources', 'Academic terminology guides'],
-    study_tips: ['Practice new vocabulary daily', 'Use terms in context', 'Create personal glossary'],
-    next_steps: ['Build vocabulary list', 'Practice explanations', 'Seek clarification when needed']
+    content: result,
+    agent_used: 'motivator',
+    confidence: 0.88
   };
 }
 
-// Citation Agent - Academic writing and referencing
-async function citationAgent(task: StudentSubTask, context: string, userName: string): Promise<StudentAgentResult> {
-  const systemPrompt = `You are the Citation Agent for Campus Companion, specialized in helping University of Uyo students with academic writing and proper referencing.
-
-Your expertise:
-- Format citations in APA, MLA, Chicago styles
-- Create bibliographies and reference lists
-- Explain plagiarism prevention
-- Improve academic writing style
-- Structure academic papers
-- Ensure academic integrity
-
-Student: ${userName}
-Context: ${context}
-Citation Goal: ${task.student_context}
-
-Task: ${task.content}
-
-Provide citation and writing assistance that:
-1. Shows proper citation formats with examples
-2. Explains when and how to cite sources
-3. Helps structure academic arguments
-4. Provides templates for common citation types
-5. Emphasizes academic integrity
-6. Considers University of Uyo citation requirements
-
-Focus on helping the student develop strong academic writing skills.`;
-
-  const result = await callGroqModel(STUDENT_AGENT_MODELS.citation, [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: task.content }
-  ], 800, 0.2);
-
-  return {
-    taskId: task.id,
-    result,
-    confidence: 0.92,
-    citations: ['APA Style Guide', 'MLA Handbook', 'University writing guidelines'],
-    study_tips: ['Keep detailed source records', 'Cite as you write', 'Use citation management tools'],
-    next_steps: ['Practice citation formats', 'Review university guidelines', 'Use reference managers']
-  };
-}
-
-// Execute student-focused workers in parallel
-async function executeStudentWorkers(tasks: StudentSubTask[], context: string, userName: string, userProfile?: any): Promise<StudentAgentResult[]> {
-  const workerPromises = tasks.map(async (task) => {
-    try {
-      switch (task.type) {
-        case 'study_help':
-          return await studyHelperAgent(task, context, userName);
-        case 'research':
-          return await referenceResearchAgent(task, context, userName);
-        case 'task_management':
-          return await taskManagerAgent(task, context, userName);
-        case 'language':
-          return await languageHelperAgent(task, context, userName);
-        case 'citation':
-          return await citationAgent(task, context, userName);
-        default:
-          return await studyHelperAgent(task, context, userName);
-      }
-    } catch (error) {
-      console.error(`Student worker error for task ${task.id}:`, error);
-      return {
-        taskId: task.id,
-        result: `I'm having trouble with this part of your question, but I'm here to help you learn! Let me assist you with the other aspects.`,
-        confidence: 0.1,
-        citations: [],
-        study_tips: ['Don\'t worry about setbacks', 'Keep practicing', 'Ask for help when needed'],
-        next_steps: ['Try rephrasing your question', 'Break it into smaller parts', 'Seek additional resources']
-      };
-    }
-  });
-
-  return await Promise.all(workerPromises);
-}
-
-// Student-Focused Synthesis Agent
-async function studentSynthesisAgent(results: StudentAgentResult[], originalQuery: string, userName: string): Promise<string> {
-  const systemPrompt = `You are the Student Synthesis Agent for Campus Companion. Your role is to combine multiple specialist outputs into one coherent, educational response for the University of Uyo student.
+// Unifier Agent - Creates consistent Campus Companion voice
+async function unifyResponse(agentResponse: AgentResponse, originalQuery: string, userName: string): Promise<string> {
+  const systemPrompt = `You are the Campus Companion Voice Unifier. Transform agent responses into a consistent, friendly Campus Companion voice.
 
 Student: ${userName}
 Original Query: "${originalQuery}"
+Agent Response: "${agentResponse.content}"
+Agent Used: ${agentResponse.agent_used}
 
-Specialist Results:
-${results.map(r => `
-Task ${r.taskId}:
-Response: ${r.result}
-Study Tips: ${r.study_tips?.join(', ') || 'None'}
-Next Steps: ${r.next_steps?.join(', ') || 'None'}
-Citations: ${r.citations?.join(', ') || 'None'}
-`).join('\n')}
+Transform this into Campus Companion's voice:
+- Friendly and encouraging tone
+- Keep the same information but make it conversational
+- Add appropriate emoji (1-2 max)
+- Stay concise (2-3 sentences)
+- Sound like a helpful study buddy
 
-Create a unified, educational response that:
-1. Directly answers the student's question
-2. Combines insights from all specialists
-3. Is encouraging and supportive
-4. Uses clear, student-friendly language
-5. Includes actionable study tips
-6. Provides clear next steps for learning
-7. Maintains an encouraging, mentor-like tone
-8. Emphasizes the student's ability to succeed
-
-Structure your response with:
-- Clear main answer
-- Key learning points
-- Practical study tips
-- Recommended next steps
-- Encouragement for continued learning
-
-Make it feel like a helpful tutor who believes in the student's success.`;
-
-  return await callGroqModel(STUDENT_AGENT_MODELS.polisher, [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: 'Please synthesize the specialist results into a final educational response.' }
-  ], 1400, 0.4);
-}
-
-// Enhanced Safety Agent for student content
-async function studentSafetyAgent(content: string): Promise<{ safe: boolean; reason?: string }> {
-  const systemPrompt = `You are the Safety Agent for Campus Companion, protecting University of Uyo students. Review content for:
-
-1. Academic integrity violations (encouraging cheating, plagiarism)
-2. Harmful or inappropriate content
-3. Misinformation or factually incorrect academic content
-4. Unsafe advice or instructions
-5. Content that undermines learning or education
-6. Personal information exposure
-
-Content to review: ${content}
-
-Respond with only "SAFE" or "UNSAFE: [specific reason]"`;
+Make it feel like Campus Companion is speaking directly to the student.`;
 
   try {
-    const result = await callGroqModel(STUDENT_AGENT_MODELS.safety, [
+    return await callGroqModel(AGENT_MODELS.unifier, [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: content }
-    ], 200, 0.1);
-
-    const isSafe = result.toLowerCase().includes('safe') && !result.toLowerCase().includes('unsafe');
-    return {
-      safe: isSafe,
-      reason: isSafe ? undefined : result
-    };
+      { role: 'user', content: 'Please unify this response.' }
+    ], 300, 0.5);
   } catch (error) {
-    console.error('Safety check error:', error);
-    return { safe: true }; // Default to safe if check fails
+    console.error('Unifier error:', error);
+    return agentResponse.content; // Fallback to original
   }
 }
 
-// Student-Friendly Style Enhancement Agent
-async function studentPolisherAgent(content: string, userName: string): Promise<string> {
-  const systemPrompt = `You are the Student Polisher Agent for Campus Companion. Transform the response to be:
-
-1. Clear and well-structured for university students
-2. Encouraging and motivational
-3. Practical and actionable
-4. Appropriate for University of Uyo context
-5. Engaging and easy to understand
-6. Supportive of the student's learning journey
-
-Student: ${userName}
-Content to enhance: ${content}
-
-Polish this response to be more:
-- Student-friendly and encouraging
-- Clear and well-organized
-- Practical with actionable advice
-- Motivational and supportive
-- Culturally appropriate for Nigerian students
-
-Maintain all factual content while improving clarity, encouragement, and educational value.`;
-
+// Main processing function with routing
+async function processWithRouting(query: string, context: string, userName: string, userProfile?: any): Promise<{ response: string; routing: RoutingDecision; processing_type: string }> {
   try {
-    return await callGroqModel(STUDENT_AGENT_MODELS.polisher, [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: content }
-    ], 1200, 0.6);
-  } catch (error) {
-    console.error('Student polisher error:', error);
-    return content;
-  }
-}
+    console.log('Starting routed processing for:', userName);
 
-// Main student-focused multi-agent processing
-async function processStudentMultiAgent(query: string, context: string, userName: string, userProfile?: any): Promise<string> {
-  try {
-    console.log('Starting student-focused multi-agent processing for:', userName);
+    // Step 1: Route to appropriate agent
+    const routing = await routeUserQuery(query, context);
+    console.log('Routing decision:', routing);
 
-    // Step 1: Student Orchestrator analyzes query
-    const subtasks = await studentOrchestratorAgent(query, context, userName, userProfile);
-    console.log('Student orchestrator created', subtasks.length, 'educational subtasks');
-
-    // Step 2: Execute student-focused workers
-    const workerResults = await executeStudentWorkers(subtasks, context, userName, userProfile);
-    console.log('Student specialists completed processing');
-
-    // Step 3: Educational synthesis
-    const synthesizedResponse = await studentSynthesisAgent(workerResults, query, userName);
-    console.log('Educational synthesis completed');
-
-    // Step 4: Student safety check
-    const safetyCheck = await studentSafetyAgent(synthesizedResponse);
-    if (!safetyCheck.safe) {
-      console.log('Content blocked by student safety agent:', safetyCheck.reason);
-      return `I want to help you learn, but I can't provide that specific information. Let me help you with your studies in a different way! What specific concept or topic would you like to understand better?`;
+    // Step 2: Execute selected agent
+    let agentResponse: AgentResponse;
+    
+    switch (routing.selected_agent) {
+      case 'study_helper':
+        agentResponse = await studyHelperAgent(query, context, userName);
+        break;
+      case 'time_manager':
+        agentResponse = await timeManagerAgent(query, context, userName);
+        break;
+      case 'researcher':
+        agentResponse = await researcherAgent(query, context, userName);
+        break;
+      case 'motivator':
+        agentResponse = await motivatorAgent(query, context, userName);
+        break;
+      default:
+        agentResponse = await studyHelperAgent(query, context, userName);
     }
 
-    // Step 5: Student-friendly enhancement
-    const finalResponse = await studentPolisherAgent(synthesizedResponse, userName);
-    console.log('Student-focused multi-agent processing completed successfully');
+    console.log('Agent processing completed');
 
-    return finalResponse;
+    // Step 3: Unify into Campus Companion voice
+    const unifiedResponse = await unifyResponse(agentResponse, query, userName);
+    console.log('Response unified successfully');
+
+    return {
+      response: unifiedResponse,
+      routing,
+      processing_type: 'routed_agent'
+    };
   } catch (error) {
-    console.error('Student multi-agent processing error:', error);
-    // Fallback to encouraging single-model response
-    return await callGroqModel(STUDENT_AGENT_MODELS.study_helper, [
+    console.error('Routed processing error:', error);
+    // Simple fallback
+    const fallbackResponse = await callGroqModel(AGENT_MODELS.study_helper, [
       { 
         role: 'system', 
-        content: `You are Campus Companion, an encouraging AI study assistant for University of Uyo students. Help ${userName} learn and succeed with their question: ${query}. Be supportive, clear, and educational.` 
+        content: `You are Campus Companion, a helpful AI study assistant for University of Uyo students. Give ${userName} a brief, encouraging answer to: ${query}. Keep it to 2-3 sentences max.` 
       },
       { role: 'user', content: query }
-    ], 1000, 0.5);
+    ], 250, 0.5);
+
+    return {
+      response: fallbackResponse,
+      routing: { selected_agent: 'study_helper', confidence: 0.5, reason: 'Fallback routing' },
+      processing_type: 'fallback'
+    };
   }
 }
 
@@ -614,8 +370,8 @@ serve(async (req) => {
       });
     }
 
-    if (message.length > 2000) {
-      return new Response(JSON.stringify({ error: 'Message too long. Please keep it under 2000 characters so I can help you better!' }), {
+    if (message.length > 1000) {
+      return new Response(JSON.stringify({ error: 'Please keep your question shorter so I can help you better! 😊' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -630,16 +386,21 @@ serve(async (req) => {
 
     const userName = profile?.full_name || 'Student';
     const sanitizedMessage = message.trim();
-    const sanitizedContext = context ? context.trim() : 'University of Uyo student using Campus Companion for academic assistance';
+    const sanitizedContext = context ? context.trim() : 'University of Uyo student using Campus Companion';
 
-    console.log('Processing student-focused request for:', user.id);
+    console.log('Processing routed request for:', user.id);
 
-    // Process using student-centered multi-agent system
-    const response = await processStudentMultiAgent(sanitizedMessage, sanitizedContext, userName, profile);
+    // Process using smart routing system
+    const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile);
 
     return new Response(JSON.stringify({ 
       response,
-      processing_type: 'student_multi_agent',
+      processing_type,
+      routing: {
+        selected_agent: routing.selected_agent,
+        confidence: routing.confidence,
+        reason: routing.reason
+      },
       timestamp: new Date().toISOString(),
       student_context: {
         name: userName,
@@ -652,10 +413,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in student ai-chat function:', error);
+    console.error('Error in ai-chat function:', error);
     return new Response(JSON.stringify({ 
-      error: 'I\'m having trouble right now, but I\'m here to help you succeed! Please try again in a moment.',
-      processing_type: 'error_fallback'
+      response: 'I\'m having trouble right now, but I\'m here to help you succeed! 💪 Please try again in a moment.',
+      processing_type: 'error_fallback',
+      routing: { selected_agent: 'study_helper', confidence: 0.1, reason: 'Error fallback' }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
