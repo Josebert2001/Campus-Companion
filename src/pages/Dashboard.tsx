@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, BookOpen, MessageSquare, BarChart3, Loader2, Menu, Users } from 'lucide-react';
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { Calendar, BookOpen, MessageSquare, ChartBar as BarChart3, Loader as Loader2, Menu, Users } from 'lucide-react't DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
 import TodaySchedule from "@/components/dashboard/TodaySchedule";
 import AIStudyCompanion from "@/components/dashboard/AIStudyCompanion";
@@ -10,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useStats } from "@/hooks/useStats";
 import { useTodaySchedule } from "@/hooks/useTodaySchedule";
-import { useNavigate } from "react-router-dom";
 
 interface DashboardProps {
   user: any;
@@ -20,7 +18,6 @@ interface DashboardProps {
 export default function Dashboard({ user, onSignOut }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
   
   // Fetch real data from database
   const { stats, loading: statsLoading, error: statsError } = useStats();
@@ -64,7 +61,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                   { value: 'schedule', icon: Calendar, label: 'Schedule' },
                   { value: 'assignments', icon: BookOpen, label: 'Assignments' },
                   { value: 'ai-companion', icon: MessageSquare, label: 'AI Companion' },
-                  { value: 'study-rooms', icon: Users, label: 'Study Rooms' },
                 ].map((tab) => (
                   <Button
                     key={tab.value}
@@ -73,9 +69,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                     onClick={() => {
                       setActiveTab(tab.value);
                       setIsMobileMenuOpen(false);
-                      if (tab.value === 'study-rooms') {
-                        navigate('/study-rooms');
-                      }
                     }}
                   >
                     <tab.icon className="w-4 h-4 mr-2" />
@@ -105,10 +98,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
             <TabsTrigger value="ai-companion" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">AI Companion</span>
-            </TabsTrigger>
-            <TabsTrigger value="study-rooms" className="flex items-center gap-2" onClick={() => navigate('/study-rooms')}>
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Study Rooms</span>
             </TabsTrigger>
           </TabsList>
 

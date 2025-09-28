@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Clock, BookOpen, Plus, Lock, Unlock } from 'lucide-react';
+import { Users, Clock, BookOpen, Plus, Lock, Clock as Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
