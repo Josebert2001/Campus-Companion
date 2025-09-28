@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
@@ -521,6 +520,20 @@ serve(async (req) => {
       default:
         // Handle WebRTC signaling
         result = await handleWebRTCSignaling(request, user.id);
+    }
+
+    // Log activity
+    try {
+      await supabase.from('usage_analytics').insert({
+        user_id: user.id,
+        function_name: 'study-rooms',
+        success: true,
+        model_used: 'webrtc-rooms',
+        timestamp: new Date().toISOString()
+      });
+    } catch (logError) {
+      // Don't fail the request if logging fails
+      console.warn('Failed to log usage analytics:', logError);
     }
 
     return new Response(JSON.stringify({
