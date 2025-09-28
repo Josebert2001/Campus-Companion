@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, BookOpen, MessageSquare, ChartBar as BarChart3, Loader as Loader2, Menu, Users } from 'lucide-react't DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { Calendar, BookOpen, MessageSquare, ChartBar as BarChart3, Loader as Loader2, Menu, Users } from 'lucide-react';
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuickStats from "@/components/dashboard/QuickStats";
 import TodaySchedule from "@/components/dashboard/TodaySchedule";
 import AIStudyCompanion from "@/components/dashboard/AIStudyCompanion";
