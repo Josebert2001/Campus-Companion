@@ -340,25 +340,18 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: authHeader ? { Authorization: authHeader } : {} }
     });
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Try to get user if authenticated, otherwise use guest mode
+    let user = null;
+    if (authHeader) {
+      const { data: userData } = await supabase.auth.getUser();
+      user = userData?.user || null;
     }
 
     const { message, context } = await req.json();
@@ -378,17 +371,21 @@ serve(async (req) => {
     }
 
     // Fetch student profile for personalized assistance
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, course, year_of_study, university')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    let profile = null;
+    if (user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, course, year_of_study, university')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      profile = profileData;
+    }
 
     const userName = profile?.full_name || 'Student';
     const sanitizedMessage = message.trim();
     const sanitizedContext = context ? context.trim() : 'University of Uyo student using Campus Companion';
 
-    console.log('Processing routed request for:', user.id);
+    console.log('Processing routed request for:', user?.id || 'guest');
 
     // Process using smart routing system
     const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile);
