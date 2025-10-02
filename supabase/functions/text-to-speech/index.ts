@@ -34,33 +34,44 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice = 'alloy' } = await req.json();
+    const { text, voice = 'ErXwobaYiN019PkySvjV' } = await req.json(); // Antoni - friendly voice
 
     if (!text || text.trim().length === 0) {
       throw new Error('No text provided for speech synthesis');
     }
 
-    console.log('Generating speech for Campus Companion:', { textLength: text.length, voice });
+    console.log('Generating speech with ElevenLabs:', { textLength: text.length, voice });
 
-    // Generate speech using OpenAI TTS
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'tts-1-hd',
-        input: text,
-        voice: voice,
-        response_format: 'mp3',
-        speed: 1.0
-      }),
-    });
+    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY');
+    if (!elevenLabsApiKey) {
+      throw new Error('ElevenLabs API key not configured');
+    }
+
+    // Generate speech using ElevenLabs Turbo v2 (fastest, lowest latency)
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': elevenLabsApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_turbo_v2', // Fastest model
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.5,
+            use_speaker_boost: true
+          }
+        })
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI TTS error:', response.status, errorText);
+      console.error('ElevenLabs TTS error:', response.status, errorText);
       throw new Error(`Speech synthesis failed: ${response.status}`);
     }
 
@@ -70,7 +81,7 @@ serve(async (req) => {
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     );
 
-    console.log('Speech generation successful');
+    console.log('ElevenLabs speech generation successful');
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
