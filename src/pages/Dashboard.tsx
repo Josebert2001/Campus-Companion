@@ -16,22 +16,22 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-accent/20 to-secondary/10">
         <AppSidebar />
-        
-        <div className="flex-1 flex flex-col w-full">
-          {/* Header with Sidebar Trigger */}
-          <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b">
-            <div className="flex items-center gap-4 p-4">
-              <SidebarTrigger className="lg:hidden" />
-              <DashboardHeader 
-                studentName={user?.user_metadata?.full_name || user?.email || "Student"}
-                upcomingCount={statsLoading ? 0 : (stats.pendingAssignments + stats.upcomingExams)}
-                onSignOut={onSignOut}
-              />
+
+        <div className="flex-1 flex flex-col w-full min-w-0">
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-sm">
+            <div className="flex items-center gap-3 px-3 sm:px-4 md:px-6 py-3">
+              <SidebarTrigger className="md:hidden h-9 w-9" />
+              <div className="flex-1 min-w-0">
+                <DashboardHeader
+                  studentName={user?.user_metadata?.full_name || user?.email || "Student"}
+                  upcomingCount={statsLoading ? 0 : (stats.pendingAssignments + stats.upcomingExams)}
+                  onSignOut={onSignOut}
+                />
+              </div>
             </div>
           </header>
 
-          {/* Main Chat Content */}
-          <main className="flex-1 w-full">
+          <main className="flex-1 w-full overflow-hidden">
             <div className="h-full w-full">
               <AIStudyCompanion />
             </div>
