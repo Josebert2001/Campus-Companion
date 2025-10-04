@@ -133,55 +133,58 @@ export default function AIStudyCompanion() {
   ];
 
   return (
-    <div className="glass-card p-0 overflow-hidden h-fit">
-      <div className="p-4 bg-gradient-to-r from-primary to-secondary text-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
-            <div className="relative">
-              <GraduationCap className="w-5 h-5" />
-              <Zap className="w-2 h-2 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
+    <div className="flex flex-col h-full w-full">
+      {/* Chat Header - Fixed */}
+      <div className="flex-shrink-0 p-4 sm:p-6 border-b bg-gradient-to-r from-primary/10 to-secondary/10">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <div className="relative">
+                <GraduationCap className="w-6 h-6 text-primary" />
+                <Zap className="w-3 h-3 absolute -top-1 -right-1 text-yellow-500 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Campus Companion AI</h1>
+              <p className="text-sm text-muted-foreground">Student-focused AI agents for academic success</p>
             </div>
           </div>
-          <div>
-            <h3 className="font-semibold mobile-text">Campus Companion AI</h3>
-            <p className="text-xs opacity-90">Student-focused AI agents for academic success</p>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {quickActions.map((action, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="text-xs h-auto py-2 px-3 flex flex-col items-center gap-1 hover:bg-primary/10 hover:border-primary/30 transition-all"
+                onClick={() => setInputValue(action.action)}
+              >
+                <action.icon className="w-4 h-4" />
+                <span className="text-xs leading-tight text-center">{action.label}</span>
+              </Button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="p-4">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-          {quickActions.map((action, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              className="text-xs h-auto py-2 px-2 flex flex-col items-center gap-1 hover:bg-primary/10 hover:border-primary/30 transition-all"
-              onClick={() => setInputValue(action.action)}
-            >
-              <action.icon className="w-3 h-3" />
-              <span className="text-xs leading-tight text-center">{action.label}</span>
-            </Button>
-          ))}
-        </div>
-
-        {/* Chat Messages */}
-        <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto mb-4 scroll-smooth">
+      {/* Chat Messages - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto space-y-4">
           {messages.map((message) => (
-            <div key={message.id}>
-              <div className={message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}>
+            <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] sm:max-w-[75%] ${message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}`}>
                 {message.imageUrl && (
                   <img 
                     src={message.imageUrl} 
                     alt="Study material" 
-                    className="max-w-32 h-auto rounded mb-2" 
+                    className="max-w-full h-auto rounded mb-2" 
                   />
                 )}
                 
                 {message.isUser ? (
                   <div className="space-y-1">
-                    <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
+                    <p className="text-sm sm:text-base leading-relaxed">{message.text}</p>
                     {message.isVoiceInput && (
                       <div className="flex items-center gap-1 text-xs opacity-60">
                         <MessageCircle className="w-3 h-3" />
@@ -218,58 +221,63 @@ export default function AIStudyCompanion() {
             </div>
           ))}
           {isLoading && (
-            <div className="ai-chat-bubble">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse"></div>
-                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+            <div className="flex justify-start">
+              <div className="ai-chat-bubble max-w-[85%] sm:max-w-[75%]">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse"></div>
+                  <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                  <div className="loading-skeleton w-2 h-2 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                </div>
+                <p className="text-xs opacity-70">Student-focused AI agents are working on your response...</p>
               </div>
-              <p className="text-xs opacity-70">Student-focused AI agents are working on your response...</p>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Voice and Vision Input */}
-        <div className="mb-3 space-y-2">
+      {/* Input Area - Fixed */}
+      <div className="flex-shrink-0 border-t bg-background/80 backdrop-blur-sm p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto space-y-3">
+          {/* Vision Input */}
           <ImageUpload 
             onImageAnalyzed={(analysis, imageUrl) => {
               handleSendMessage(`Please help me understand this study material: ${analysis}`, imageUrl);
             }}
             disabled={isLoading}
           />
-        </div>
 
-        {/* Text Input with Voice */}
-        <div className="flex gap-2 items-end">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask about concepts, get study help, research assistance, or academic guidance..."
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            className="flex-1 text-sm"
-            disabled={isLoading}
-          />
+          {/* Text Input with Voice */}
+          <div className="flex gap-2 items-end">
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Ask about concepts, get study help, research assistance, or academic guidance..."
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              className="flex-1"
+              disabled={isLoading}
+            />
+            
+            <VoiceInput
+              onTranscription={(text) => handleSendMessage(text, undefined, true)}
+              disabled={isLoading}
+            />
+            
+            <Button 
+              onClick={() => handleSendMessage()} 
+              size="icon" 
+              disabled={isLoading || !inputValue.trim()}
+              className="flex-shrink-0 hover:bg-primary/90 transition-all"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
           
-          <VoiceInput
-            onTranscription={(text) => handleSendMessage(text, undefined, true)}
-            disabled={isLoading}
-          />
-          
-          <Button 
-            onClick={() => handleSendMessage()} 
-            size="icon" 
-            disabled={isLoading || !inputValue.trim()}
-            className="flex-shrink-0 hover:bg-primary/90 transition-all"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
-        
-        {/* Student Success Message */}
-        <div className="mt-3 text-center">
-          <p className="text-xs text-muted-foreground">
-            💡 I'm here to help you succeed at University of Uyo!
-          </p>
+          {/* Student Success Message */}
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              💡 I'm here to help you succeed at University of Uyo!
+            </p>
+          </div>
         </div>
       </div>
     </div>
