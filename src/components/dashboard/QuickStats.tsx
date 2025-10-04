@@ -1,4 +1,4 @@
-import { Clock, BookOpen, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, BookOpen, CircleCheck as CheckCircle2, CircleAlert as AlertCircle } from "lucide-react";
 
 interface StatsData {
   todayClasses: number;

@@ -1,4 +1,4 @@
-import { Calendar, BookOpen, BarChart3, Home, GraduationCap } from "lucide-react";
+import { Calendar, BookOpen, ChartBar as BarChart3, Chrome as Home, GraduationCap } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +12,7 @@ import TodaySchedule from "./TodaySchedule";
 import AssignmentTracker from "@/components/assignments/AssignmentTracker";
 import { useStats } from "@/hooks/useStats";
 import { useTodaySchedule } from "@/hooks/useTodaySchedule";
-import { Loader2 } from "lucide-react";
+import { Loader as Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

@@ -1,4 +1,4 @@
-import { Clock, MapPin, Users, MoreVertical } from "lucide-react";
+import { Clock, MapPin, Users, MoveVertical as MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ScheduleItem {

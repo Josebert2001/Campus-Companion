@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Clock, AlertTriangle, CheckCircle2, Edit, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Calendar, Clock, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, CreditCard as Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
