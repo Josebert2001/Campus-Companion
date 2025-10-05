@@ -1,4 +1,4 @@
-import { Calendar, BookOpen, BarChart3, GraduationCap, Loader2 } from "lucide-react";
+import { Calendar, BookOpen, ChartBar as BarChart3, GraduationCap, Loader as Loader2 } from "lucide-react";
 import QuickStats from "./QuickStats";
 import TodaySchedule from "./TodaySchedule";
 import AssignmentTracker from "@/components/assignments/AssignmentTracker";
