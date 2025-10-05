@@ -14,10 +14,10 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-accent/20 to-secondary/10">
+      <div className="min-h-screen w-full bg-gradient-to-br from-background via-accent/20 to-secondary/10">
         <AppSidebar />
 
-        <div className="flex-1 flex flex-col w-full min-w-0">
+        <main className="min-h-screen flex flex-col">
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-sm">
             <div className="flex items-center gap-3 px-3 sm:px-4 md:px-6 py-3">
               <SidebarTrigger className="h-9 w-9" />
@@ -31,12 +31,12 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
             </div>
           </header>
 
-          <main className="flex-1 w-full overflow-hidden">
+          <div className="flex-1 w-full overflow-hidden">
             <div className="h-full w-full">
               <AIStudyCompanion />
             </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </SidebarProvider>
   );
