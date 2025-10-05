@@ -135,7 +135,7 @@ export default function AIStudyCompanion() {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Chat Header - Fixed */}
-      <div className="flex-shrink-0 p-4 sm:p-6 border-b bg-gradient-to-r from-primary/10 to-secondary/10">
+      <div className="flex-shrink-0 px-4 sm:px-6 pt-6 pb-4 sm:pb-6 border-b bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-primary/20 rounded-lg">
