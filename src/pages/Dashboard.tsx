@@ -14,17 +14,13 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-accent/20 to-secondary/10 relative">
-        <div className="hidden md:block fixed left-0 top-0 bottom-0 z-50 w-0 hover:w-64 transition-all duration-300 ease-in-out group/sidebar">
-          <div className="h-full w-64 bg-background/95 backdrop-blur-md border-r shadow-lg">
-            <AppSidebar />
-          </div>
-        </div>
+      <div className="min-h-screen w-full flex bg-gradient-to-br from-background via-accent/20 to-secondary/10">
+        <AppSidebar />
 
         <div className="flex-1 flex flex-col w-full min-w-0">
           <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b shadow-sm">
             <div className="flex items-center gap-3 px-3 sm:px-4 md:px-6 py-3">
-              <SidebarTrigger className="md:hidden h-9 w-9" />
+              <SidebarTrigger className="h-9 w-9" />
               <div className="flex-1 min-w-0">
                 <DashboardHeader
                   studentName={user?.user_metadata?.full_name || user?.email || "Student"}
@@ -40,10 +36,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
               <AIStudyCompanion />
             </div>
           </main>
-        </div>
-
-        <div className="md:hidden">
-          <AppSidebar />
         </div>
       </div>
     </SidebarProvider>
