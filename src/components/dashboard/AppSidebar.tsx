@@ -1,18 +1,9 @@
-import { Calendar, BookOpen, ChartBar as BarChart3, Chrome as Home, GraduationCap } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarSeparator,
-} from "@/components/ui/sidebar";
+import { Calendar, BookOpen, BarChart3, GraduationCap, Loader2 } from "lucide-react";
 import QuickStats from "./QuickStats";
 import TodaySchedule from "./TodaySchedule";
 import AssignmentTracker from "@/components/assignments/AssignmentTracker";
 import { useStats } from "@/hooks/useStats";
 import { useTodaySchedule } from "@/hooks/useTodaySchedule";
-import { Loader as Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -22,52 +13,50 @@ export function AppSidebar() {
 
   if (statsLoading || scheduleLoading) {
     return (
-      <Sidebar collapsible="icon" className="border-r">
-        <SidebarContent>
-          <div className="h-full flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        </SidebarContent>
-      </Sidebar>
+      <div className="h-full w-full flex flex-col">
+        <div className="h-full flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="border-b bg-muted/30 px-4 py-3">
+    <div className="h-full w-full flex flex-col">
+      <div className="border-b bg-muted/30 px-4 py-3 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary flex-shrink-0">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold leading-none">Study Hub</span>
-            <span className="text-xs text-muted-foreground">Your Learning Space</span>
+          <div className="flex flex-col min-w-0 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">
+            <span className="text-sm font-semibold leading-none whitespace-nowrap">Study Hub</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Your Learning Space</span>
           </div>
         </div>
-      </SidebarHeader>
+      </div>
 
-      <SidebarContent className="px-2 py-3">
+      <div className="flex-1 px-2 py-3 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="space-y-4">
-            <SidebarGroup className="px-2">
-              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+            <div className="px-2">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">
                 Overview
-              </SidebarGroupLabel>
-            </SidebarGroup>
+              </div>
+            </div>
 
             <Tabs defaultValue="overview" className="w-full px-2">
               <TabsList className="grid w-full grid-cols-3 h-9 bg-muted/50">
                 <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-background">
-                  <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-                  <span className="hidden sm:inline">Stats</span>
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span className="ml-1.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 hidden group-hover/sidebar:inline">Stats</span>
                 </TabsTrigger>
                 <TabsTrigger value="schedule" className="text-xs data-[state=active]:bg-background">
-                  <Calendar className="w-3.5 h-3.5 mr-1.5" />
-                  <span className="hidden sm:inline">Today</span>
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span className="ml-1.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 hidden group-hover/sidebar:inline">Today</span>
                 </TabsTrigger>
                 <TabsTrigger value="assignments" className="text-xs data-[state=active]:bg-background">
-                  <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-                  <span className="hidden sm:inline">Tasks</span>
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="ml-1.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 hidden group-hover/sidebar:inline">Tasks</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -85,7 +74,7 @@ export function AppSidebar() {
             </Tabs>
           </div>
         </ScrollArea>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 }
