@@ -25,7 +25,16 @@ Deno.serve(async (req) => {
 
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
-      throw new Error("OPENAI_API_KEY not configured");
+      return new Response(
+        JSON.stringify({
+          error: "Text-to-speech requires OpenAI API key. This feature is optional - the text chat works without it.",
+          audioContent: null
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const response = await fetch("https://api.openai.com/v1/audio/speech", {

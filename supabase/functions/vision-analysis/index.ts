@@ -43,15 +43,20 @@ serve(async (req) => {
 
     console.log('Analyzing image for Campus Companion...');
 
-    // Use OpenAI GPT-4 Vision for image analysis
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    if (!groqApiKey) {
+      throw new Error('GROQ_API_KEY not configured');
+    }
+
+    // Use Groq's vision-capable model for image analysis
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'llama-3.2-90b-vision-preview',
         messages: [
           {
             role: 'system',
@@ -101,7 +106,7 @@ Focus on educational value and helping the student learn from this visual materi
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI Vision API error:', response.status, errorText);
+      console.error('Groq Vision API error:', response.status, errorText);
       throw new Error(`Vision analysis failed: ${response.status}`);
     }
 
