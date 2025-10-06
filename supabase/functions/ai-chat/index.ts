@@ -64,7 +64,6 @@ async function callGroqModel(
   return data.choices[0].message.content;
 }
 
-// Stream model output from Groq and return a ReadableStream that forwards chunks
 async function streamGroqModel(
   model: string,
   messages: any[],
@@ -429,15 +428,12 @@ Deno.serve(async (req: Request) => {
 
     console.log("Processing routed request for:", user?.id || "guest");
 
-    // If client requested streaming, attempt to stream the model output directly
     if (wantsStream) {
-      // Decide routing first
       const routing = await routeUserQuery(sanitizedMessage, sanitizedContext);
 
-      // Build agent-specific system prompt and choose model
       let agentModel = AGENT_MODELS.study_helper;
       let systemPrompt = "";
-      const profile = null; // Keep null for streaming metadata unless user profile is needed
+      const profile = null;
       const studentContext = userName
         ? `Student Name: ${userName}\nUniversity: ${profile?.university || "University of Uyo"}`
         : `Student Name: Student\nUniversity: University of Uyo`;
@@ -472,7 +468,6 @@ Deno.serve(async (req: Request) => {
       try {
         const modelStream = await streamGroqModel(agentModel, messages, 0.3);
 
-        // Create a ReadableStream to forward model chunks and append final metadata
         const forwardStream = new ReadableStream<Uint8Array>({
           async start(controller) {
             const reader = modelStream.getReader();
@@ -486,7 +481,6 @@ Deno.serve(async (req: Request) => {
             } catch (e) {
               console.error('Error while streaming from model:', e);
             } finally {
-              // At the end, enqueue a JSON metadata chunk so client can read routing/processing info
               const meta = {
                 finish: true,
                 processing_type: 'routed_agent_stream',
@@ -511,11 +505,9 @@ Deno.serve(async (req: Request) => {
         return new Response(forwardStream, { headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' } });
       } catch (streamErr) {
         console.error('Streaming path failed, falling back to non-stream:', streamErr);
-        // fall through to non-stream behavior below
       }
     }
 
-    // Non-streaming behavior (existing path)
     const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile);
 
     return new Response(

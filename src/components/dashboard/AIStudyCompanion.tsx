@@ -88,11 +88,13 @@ export default function AIStudyCompanion() {
         headers,
         body: JSON.stringify({ message: currentInput, context: "University of Uyo student seeking academic assistance through Campus Companion" }),
         signal: controller.signal,
+      }).catch(err => {
+        console.error('Fetch error:', err);
+        throw new Error(`Failed to send a request to the Edge Function: ${err.message}`);
       });
 
       if (!res.ok || !res.body) {
-        // fallback to previous invoke method
-        throw new Error('Streaming not available, falling back');
+        throw new Error(`Streaming not available (status: ${res.status}), falling back`);
       }
 
       const reader = res.body.getReader();
