@@ -154,7 +154,7 @@ Context: ${context}`;
   }
 }
 
-async function studyHelperAgent(query: string, context: string, userName: string, profile?: any): Promise<AgentResponse> {
+async function studyHelperAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student Name: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -170,12 +170,18 @@ Context: ${context}
 
 Provide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
 
+  const messages = [{ role: "system", content: systemPrompt }];
+
+  // Add conversation history
+  if (history && history.length > 0) {
+    messages.push(...history);
+  }
+
+  messages.push({ role: "user", content: query });
+
   const result = await callGroqModel(
     AGENT_MODELS.study_helper,
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
-    ],
+    messages,
     1000,
     0.5
   );
@@ -187,7 +193,7 @@ Provide clear, helpful explanations using examples and step-by-step guidance. Be
   };
 }
 
-async function timeManagerAgent(query: string, context: string, userName: string, profile?: any): Promise<AgentResponse> {
+async function timeManagerAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -202,15 +208,11 @@ Context: ${context}
 
 Create practical schedules, prioritize tasks, and provide realistic time management strategies.`;
 
-  const result = await callGroqModel(
-    AGENT_MODELS.time_manager,
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
-    ],
-    1200,
-    0.3
-  );
+  const messages = [{ role: "system", content: systemPrompt }];
+  if (history && history.length > 0) messages.push(...history);
+  messages.push({ role: "user", content: query });
+
+  const result = await callGroqModel(AGENT_MODELS.time_manager, messages, 1200, 0.3);
 
   return {
     content: result,
@@ -219,7 +221,7 @@ Create practical schedules, prioritize tasks, and provide realistic time managem
   };
 }
 
-async function researcherAgent(query: string, context: string, userName: string, profile?: any): Promise<AgentResponse> {
+async function researcherAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -234,15 +236,11 @@ Context: ${context}
 
 Guide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).`;
 
-  const result = await callGroqModel(
-    AGENT_MODELS.researcher,
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
-    ],
-    1200,
-    0.3
-  );
+  const messages = [{ role: "system", content: systemPrompt }];
+  if (history && history.length > 0) messages.push(...history);
+  messages.push({ role: "user", content: query });
+
+  const result = await callGroqModel(AGENT_MODELS.researcher, messages, 1200, 0.3);
 
   return {
     content: result,
@@ -251,7 +249,7 @@ Guide research methodology, help find credible sources, and teach proper academi
   };
 }
 
-async function motivatorAgent(query: string, context: string, userName: string, profile?: any): Promise<AgentResponse> {
+async function motivatorAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -266,15 +264,11 @@ Context: ${context}
 
 Provide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.`;
 
-  const result = await callGroqModel(
-    AGENT_MODELS.motivator,
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
-    ],
-    800,
-    0.7
-  );
+  const messages = [{ role: "system", content: systemPrompt }];
+  if (history && history.length > 0) messages.push(...history);
+  messages.push({ role: "user", content: query });
+
+  const result = await callGroqModel(AGENT_MODELS.motivator, messages, 800, 0.7);
 
   return {
     content: result,
@@ -313,7 +307,8 @@ async function processWithRouting(
   query: string,
   context: string,
   userName: string,
-  userProfile?: any
+  userProfile?: any,
+  history?: any[]
 ): Promise<{ response: string; routing: RoutingDecision; processing_type: string }> {
   try {
     console.log("Starting routed processing for:", userName);
@@ -325,19 +320,19 @@ async function processWithRouting(
 
     switch (routing.selected_agent) {
       case "study_helper":
-        agentResponse = await studyHelperAgent(query, context, userName, userProfile);
+        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history);
         break;
       case "time_manager":
-        agentResponse = await timeManagerAgent(query, context, userName, userProfile);
+        agentResponse = await timeManagerAgent(query, context, userName, userProfile, history);
         break;
       case "researcher":
-        agentResponse = await researcherAgent(query, context, userName, userProfile);
+        agentResponse = await researcherAgent(query, context, userName, userProfile, history);
         break;
       case "motivator":
-        agentResponse = await motivatorAgent(query, context, userName, userProfile);
+        agentResponse = await motivatorAgent(query, context, userName, userProfile, history);
         break;
       default:
-        agentResponse = await studyHelperAgent(query, context, userName, userProfile);
+        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history);
     }
 
     console.log("Agent processing completed");
@@ -353,15 +348,18 @@ async function processWithRouting(
   } catch (error) {
     console.error("Routed processing error:", error);
 
+    const messages = [
+      {
+        role: "system",
+        content: `You are Campus Companion, a helpful AI study assistant for University of Uyo students. Give ${userName} a brief, encouraging answer to: ${query}. Keep it to 2-3 sentences max.`,
+      }
+    ];
+    if (history && history.length > 0) messages.push(...history);
+    messages.push({ role: "user", content: query });
+
     const fallbackResponse = await callGroqModel(
       AGENT_MODELS.study_helper,
-      [
-        {
-          role: "system",
-          content: `You are Campus Companion, a helpful AI study assistant for University of Uyo students. Give ${userName} a brief, encouraging answer to: ${query}. Keep it to 2-3 sentences max.`,
-        },
-        { role: "user", content: query },
-      ],
+      messages,
       250,
       0.5
     );
@@ -400,6 +398,7 @@ Deno.serve(async (req: Request) => {
   const body = await req.json();
   const message = body.message;
   const context = body.context;
+  const sessionId = body.session_id;
   const wantsStream = Boolean(body.stream) || (req.headers.get('accept') || '').includes('text/event-stream');
 
     if (!message || typeof message !== "string") {
@@ -427,6 +426,41 @@ Deno.serve(async (req: Request) => {
     const sanitizedContext = context ? context.trim() : "University of Uyo student using Campus Companion";
 
     console.log("Processing routed request for:", user?.id || "guest");
+
+    // Load conversation history if session_id provided
+    let conversationHistory: any[] = [];
+    let currentSessionId = sessionId;
+
+    if (user) {
+      if (sessionId) {
+        // Load existing conversation
+        const { data: messages } = await supabase
+          .from("conversation_messages")
+          .select("role, content")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: true })
+          .limit(20); // Last 20 messages for context
+
+        if (messages) {
+          conversationHistory = messages;
+        }
+      } else {
+        // Create new session
+        const { data: newSession } = await supabase
+          .from("conversation_sessions")
+          .insert({
+            user_id: user.id,
+            title: sanitizedMessage.slice(0, 50) + (sanitizedMessage.length > 50 ? "..." : ""),
+            type: "text"
+          })
+          .select()
+          .single();
+
+        if (newSession) {
+          currentSessionId = newSession.id;
+        }
+      }
+    }
 
     if (wantsStream) {
       const routing = await routeUserQuery(sanitizedMessage, sanitizedContext);
@@ -508,12 +542,43 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile);
+    const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile, conversationHistory);
+
+    // Save messages to database if user is authenticated and has session
+    if (user && currentSessionId) {
+      await supabase.from("conversation_messages").insert([
+        {
+          session_id: currentSessionId,
+          user_id: user.id,
+          role: "user",
+          content: sanitizedMessage,
+          is_voice: false,
+        },
+        {
+          session_id: currentSessionId,
+          user_id: user.id,
+          role: "assistant",
+          content: response,
+          is_voice: false,
+          metadata: {
+            routing,
+            processing_type,
+          },
+        },
+      ]);
+
+      // Update session updated_at
+      await supabase
+        .from("conversation_sessions")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", currentSessionId);
+    }
 
     return new Response(
       JSON.stringify({
         response,
         processing_type,
+        session_id: currentSessionId,
         routing: {
           selected_agent: routing.selected_agent,
           confidence: routing.confidence,

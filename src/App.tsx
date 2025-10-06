@@ -10,6 +10,7 @@ import Welcome from "./pages/Welcome";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudyRooms from "./pages/StudyRooms";
+import VoiceChat from "./pages/VoiceChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/welcome" element={<Welcome />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/study-rooms" element={<StudyRooms />} />
+              <Route path="/voice-chat" element={<VoiceChat />} />
               <Route path="/" element={<Index />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
