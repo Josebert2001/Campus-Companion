@@ -3,7 +3,7 @@ import { MessageCircle, Send, Brain, Sparkles, Zap, Users, BookOpen, Calendar, L
 import AIResponseFormatter from "./AIResponseFormatter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import VoiceInput from "@/components/voice/VoiceInput";
 import VoiceOutput from "@/components/voice/VoiceOutput";
@@ -77,7 +77,7 @@ export default function AIStudyCompanion() {
       const endpoint = `${SUPABASE_URL}/functions/v1/ai-chat`;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        apikey: SUPABASE_PUBLISHABLE_KEY,
+        apikey: SUPABASE_ANON_KEY,
       };
 
       // If user is authenticated, pass auth token through global supabase client
