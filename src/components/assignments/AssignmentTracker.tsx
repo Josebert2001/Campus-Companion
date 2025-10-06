@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Clock, AlertTriangle, CheckCircle2, Edit, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Calendar, Clock, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, CreditCard as Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -247,17 +247,12 @@ export default function AssignmentTracker() {
   });
 
   return (
-    <div className="glass-card p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="mobile-heading font-bold text-foreground">Assignments & Exams</h2>
-          <p className="text-muted-foreground mobile-text">Track your academic deadlines</p>
-        </div>
-        
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="neuro-btn w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm" variant="outline" className="w-full text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
               Add Task
             </Button>
           </DialogTrigger>
@@ -355,12 +350,11 @@ export default function AssignmentTracker() {
         </Dialog>
       </div>
 
-      {/* Assignment List */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {loading ? (
-          <div className="text-center py-8 sm:py-12 text-muted-foreground">
-            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="mobile-text">Loading assignments...</p>
+          <div className="rounded-lg border bg-card p-4 text-center">
+            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           </div>
         ) : sortedAssignments.map((assignment) => {
           const daysUntilDue = getDaysUntilDue(assignment.dueDate);
@@ -368,69 +362,70 @@ export default function AssignmentTracker() {
           const isDueSoon = daysUntilDue <= 2 && daysUntilDue >= 0;
 
           return (
-            <div key={assignment.id} className="brutal-card p-4 hover:scale-[1.01] sm:hover:scale-[1.02] transition-all">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-foreground mobile-text truncate">{assignment.title}</h3>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge className={`${getPriorityColor(assignment.priority)} text-xs`}>
-                      {assignment.priority}
-                    </Badge>
-                      <Badge className={`${getStatusColor(assignment.status)} text-xs`}>
-                      {assignment.status}
-                    </Badge>
+            <div
+              key={assignment.id}
+              className="rounded-lg border bg-card p-3 shadow-sm hover:bg-accent/50 transition-colors"
+            >
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Badge className={`${getPriorityColor(assignment.priority)} text-[10px] px-1.5 py-0`}>
+                        {assignment.priority}
+                      </Badge>
+                      <Badge className={`${getStatusColor(assignment.status)} text-[10px] px-1.5 py-0`}>
+                        {assignment.status}
+                      </Badge>
                     </div>
+                    <h3 className="font-semibold text-sm text-foreground truncate">{assignment.title}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{assignment.course}</p>
                   </div>
-                  
-                  <p className="text-xs sm:text-sm text-primary mb-1 truncate">{assignment.course}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2">{assignment.description}</p>
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span className="truncate">{new Date(assignment.dueDate).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-orange-600' : 'text-muted-foreground'}`}>
-                      {isOverdue || isDueSoon ? <AlertTriangle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                      <span className="truncate">
-                        {isOverdue 
-                          ? `${Math.abs(daysUntilDue)} days overdue`
-                          : daysUntilDue === 0 
-                            ? 'Due today'
-                            : `${daysUntilDue} days left`
-                        }
-                      </span>
-                    </div>
+
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <Button
+                      onClick={() => toggleStatus(assignment.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => handleEdit(assignment)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(assignment.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-red-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <Button
-                    onClick={() => toggleStatus(assignment.id)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleEdit(assignment)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(assignment.id)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate">{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className={`flex items-center gap-1.5 ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-orange-600' : ''}`}>
+                    {isOverdue || isDueSoon ? <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> : <Clock className="w-3.5 h-3.5 flex-shrink-0" />}
+                    <span className="truncate">
+                      {isOverdue
+                        ? `${Math.abs(daysUntilDue)}d overdue`
+                        : daysUntilDue === 0
+                          ? 'Due today'
+                          : `${daysUntilDue}d left`
+                      }
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -438,9 +433,9 @@ export default function AssignmentTracker() {
         })}
 
         {!loading && assignments.length === 0 && (
-          <div className="text-center py-8 sm:py-12 text-muted-foreground">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="mobile-text">No assignments yet. Click "Add Task" to get started!</p>
+          <div className="rounded-lg border bg-card p-4 text-center">
+            <BookOpen className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+            <p className="text-xs text-muted-foreground">No tasks yet</p>
           </div>
         )}
       </div>

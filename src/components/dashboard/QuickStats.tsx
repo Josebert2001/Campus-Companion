@@ -1,4 +1,4 @@
-import { Clock, BookOpen, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, BookOpen, CircleCheck as CheckCircle2, CircleAlert as AlertCircle } from "lucide-react";
 
 interface StatsData {
   todayClasses: number;
@@ -40,17 +40,18 @@ export default function QuickStats({ stats }: { stats: StatsData }) {
   ];
 
   return (
-    <div className="responsive-grid-sm mb-6">
+    <div className="grid grid-cols-1 gap-2">
       {statItems.map((item, index) => (
-        <div key={index} className="brutal-card p-4 min-h-[100px] flex items-center">
-          <div className="flex items-center gap-3 w-full">
-            <div className={`p-2 rounded-lg ${item.bgColor} flex-shrink-0`}>
-              <item.icon className={`w-5 h-5 ${item.color}`} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xl sm:text-2xl font-bold text-foreground truncate">{item.value}</div>
-              <div className="text-xs sm:text-sm text-muted-foreground truncate">{item.label}</div>
-            </div>
+        <div
+          key={index}
+          className="flex items-center gap-3 rounded-lg border bg-card p-3 shadow-sm hover:bg-accent/50 transition-colors"
+        >
+          <div className={`flex h-9 w-9 items-center justify-center rounded-md ${item.bgColor} flex-shrink-0`}>
+            <item.icon className={`h-4 w-4 ${item.color}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-2xl font-bold leading-none text-foreground">{item.value}</p>
+            <p className="text-xs text-muted-foreground mt-1 truncate">{item.label}</p>
           </div>
         </div>
       ))}
