@@ -114,44 +114,81 @@ export default function VoiceInput({ onTranscription, disabled }: VoiceInputProp
   }, [isRecording]);
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Voice Settings */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 opacity-70 hover:opacity-100"
-            disabled={disabled || isRecording}
-          >
-            <Settings className="w-3 h-3" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" side="top">
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm">Voice Settings</h4>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          size="icon"
+          variant={isRecording ? "destructive" : "outline"}
+          disabled={disabled || isProcessing}
+          className={isRecording ? "animate-pulse" : ""}
+          title={isRecording ? 'Recording...' : 'Voice input'}
+        >
+          {isRecording ? (
+            <Square className="w-4 h-4" />
+          ) : isProcessing ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Mic className="w-4 h-4" />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 bg-popover z-50" side="top" align="end">
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm">Voice Input</h4>
+          
+          {/* Recording Controls */}
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={disabled || isProcessing}
+              className={`w-full ${isRecording ? 'bg-destructive hover:bg-destructive/90' : ''}`}
+            >
+              {isRecording ? (
+                <>
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Recording
+                </>
+              ) : isProcessing ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Mic className="w-4 h-4 mr-2" />
+                  Start Recording
+                </>
+              )}
+            </Button>
             
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={enhanceAcademic}
-                  onChange={(e) => setEnhanceAcademic(e.target.checked)}
-                  className="w-3 h-3"
-                />
-                Academic Enhancement
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Improves recognition of academic terms and concepts
-              </p>
-            </div>
+            {isRecording && (
+              <div className="text-center text-xs text-muted-foreground animate-pulse">
+                🔴 Listening...
+              </div>
+            )}
+          </div>
+
+          {/* Voice Settings */}
+          <div className="space-y-2 pt-2 border-t">
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={enhanceAcademic}
+                onChange={(e) => setEnhanceAcademic(e.target.checked)}
+                className="w-3 h-3"
+              />
+              Academic Enhancement
+            </label>
+            <p className="text-xs text-muted-foreground pl-5">
+              Better recognition of academic terms
+            </p>
             
-            <div className="space-y-2">
+            <div className="space-y-1 pt-1">
               <label className="text-xs font-medium">Language:</label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full text-xs px-2 py-1 rounded border bg-background"
+                className="w-full text-xs px-2 py-1.5 rounded border bg-background"
               >
                 <option value="en">English</option>
                 <option value="en-NG">Nigerian English</option>
@@ -159,32 +196,8 @@ export default function VoiceInput({ onTranscription, disabled }: VoiceInputProp
               </select>
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
-      
-      <Button
-        size="icon"
-        variant={isRecording ? "destructive" : "outline"}
-        onClick={isRecording ? stopRecording : startRecording}
-        disabled={disabled || isProcessing}
-        className={`${isRecording ? 'animate-pulse neuro-btn' : 'neuro-btn'} transition-all`}
-        title={isRecording ? 'Stop recording' : 'Start voice input'}
-      >
-        {isRecording ? (
-          <Square className="w-4 h-4" />
-        ) : isProcessing ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <Mic className="w-4 h-4" />
-        )}
-      </Button>
-      
-      {isRecording && (
-        <div className="flex items-center gap-1 text-sm text-destructive animate-pulse">
-          <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-          {enhanceAcademic ? 'Recording (Enhanced)...' : 'Recording...'}
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

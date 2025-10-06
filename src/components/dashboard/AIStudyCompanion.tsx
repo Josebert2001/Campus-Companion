@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Brain, Sparkles, Zap, Users, BookOpen, Calendar, Languages, FileText, GraduationCap } from "lucide-react";
+import { MessageCircle, Send, Sparkles, Zap, Users, GraduationCap, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AIResponseFormatter from "./AIResponseFormatter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,17 +30,10 @@ interface ChatMessage {
 
 export default function AIStudyCompanion() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      text: "Hi! I'm your Campus Companion AI, powered by specialized student-focused agents. I can help you with studying, research, assignments, time management, and academic success using advanced AI designed specifically for University of Uyo students! 🎓",
-      isUser: false,
-      timestamp: new Date(),
-      processingType: 'student_multi_agent'
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const handleSendMessage = async (message?: string, imageUrl?: string, isVoice?: boolean) => {
     const textToSend = message || inputValue;
@@ -195,83 +189,70 @@ export default function AIStudyCompanion() {
   }, [messages, isLoading]);
 
   const quickActions = [
-    { 
-      icon: Brain, 
-      label: "Explain Concept", 
-      action: "Help me understand a difficult concept by breaking it down step-by-step with examples",
-      category: "study_help"
-    },
-    { 
-      icon: BookOpen, 
-      label: "Research Help", 
-      action: "Help me find academic sources and create proper citations for my research project",
-      category: "research"
-    },
-    { 
-      icon: Calendar, 
-      label: "Study Schedule", 
-      action: "Create a personalized study schedule and help me manage my assignments and deadlines",
-      category: "task_management"
-    },
-    { 
-      icon: Languages, 
-      label: "Simplify Text", 
-      action: "Help me understand complex academic text by explaining it in simpler terms",
-      category: "language"
-    },
-    { 
-      icon: FileText, 
-      label: "Citation Help", 
-      action: "Show me how to properly cite sources and format my academic paper",
-      category: "citation"
-    },
-    { 
-      icon: GraduationCap, 
-      label: "Exam Prep", 
-      action: "Help me prepare for my upcoming exam with study strategies and practice questions",
-      category: "study_help"
-    },
+    { label: "📚 Explain a concept", prompt: "Help me understand a difficult concept by breaking it down step-by-step with examples" },
+    { label: "🔍 Research help", prompt: "Help me find academic sources and create proper citations for my research project" },
+    { label: "📅 Create study schedule", prompt: "Create a personalized study schedule and help me manage my assignments and deadlines" },
+    { label: "✏️ Simplify text", prompt: "Help me understand complex academic text by explaining it in simpler terms" },
+    { label: "📖 Citation help", prompt: "Show me how to properly cite sources and format my academic paper" },
+    { label: "🎓 Exam preparation", prompt: "Help me prepare for my upcoming exam with study strategies and practice questions" },
   ];
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Chat Header - Fixed */}
-      <div className="flex-shrink-0 px-4 sm:px-6 pt-6 pb-4 sm:pb-6 border-b bg-gradient-to-r from-primary/10 to-secondary/10">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary/20 rounded-lg">
-              <div className="relative">
-                <GraduationCap className="w-6 h-6 text-primary" />
-                <Zap className="w-3 h-3 absolute -top-1 -right-1 text-yellow-500 animate-pulse" />
-              </div>
+      {/* Simplified Header */}
+      <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <GraduationCap className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Campus Companion AI</h1>
-              <p className="text-sm text-muted-foreground">Student-focused AI agents for academic success</p>
+              <h1 className="text-lg font-semibold text-foreground">Campus Companion AI</h1>
+              <p className="text-xs text-muted-foreground">Ask me anything about your studies</p>
             </div>
           </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                className="text-xs h-auto py-2 px-3 flex flex-col items-center gap-1 hover:bg-primary/10 hover:border-primary/30 transition-all"
-                onClick={() => setInputValue(action.action)}
-              >
-                <action.icon className="w-4 h-4" />
-                <span className="text-xs leading-tight text-center">{action.label}</span>
+          
+          {/* Quick Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Suggestions</span>
+                <ChevronDown className="w-3 h-3" />
               </Button>
-            ))}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 bg-popover z-50">
+              {quickActions.map((action, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={() => setInputValue(action.prompt)}
+                  className="cursor-pointer py-2"
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {/* Chat Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-4xl mx-auto space-y-4">
+          {/* Welcome Message */}
+          {showWelcome && messages.length === 0 && (
+            <div className="text-center py-8 space-y-4">
+              <div className="inline-flex p-4 bg-primary/5 rounded-full mb-2">
+                <Sparkles className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">Welcome to Campus Companion AI</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                I'm here to help with studying, research, assignments, and academic success. 
+                Ask me anything or use the suggestions above to get started!
+              </p>
+            </div>
+          )}
+
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] sm:max-w-[75%] ${message.isUser ? "student-chat-bubble" : "ai-chat-bubble"}`}>
@@ -336,48 +317,49 @@ export default function AIStudyCompanion() {
         </div>
       </div>
 
-      {/* Input Area - Fixed */}
-      <div className="flex-shrink-0 border-t bg-background/80 backdrop-blur-sm p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto space-y-3">
-          {/* Vision Input */}
-          <ImageUpload 
-            onImageAnalyzed={(analysis, imageUrl) => {
-              handleSendMessage(`Please help me understand this study material: ${analysis}`, imageUrl);
-            }}
-            disabled={isLoading}
-          />
-
-          {/* Text Input with Voice */}
+      {/* Simplified Input Area */}
+      <div className="flex-shrink-0 border-t bg-background p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto">
           <div className="flex gap-2 items-end">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask about concepts, get study help, research assistance, or academic guidance..."
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1"
+            <div className="flex-1 flex flex-col gap-2">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask me anything about your studies..."
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                className="flex-1"
+                disabled={isLoading}
+              />
+            </div>
+            
+            {/* Compact feature buttons */}
+            <ImageUpload 
+              onImageAnalyzed={(analysis, imageUrl) => {
+                setShowWelcome(false);
+                handleSendMessage(`Please help me understand this study material: ${analysis}`, imageUrl);
+              }}
               disabled={isLoading}
             />
             
             <VoiceInput
-              onTranscription={(text) => handleSendMessage(text, undefined, true)}
+              onTranscription={(text) => {
+                setShowWelcome(false);
+                handleSendMessage(text, undefined, true);
+              }}
               disabled={isLoading}
             />
             
             <Button 
-              onClick={() => handleSendMessage()} 
+              onClick={() => {
+                setShowWelcome(false);
+                handleSendMessage();
+              }} 
               size="icon" 
               disabled={isLoading || !inputValue.trim()}
-              className="flex-shrink-0 hover:bg-primary/90 transition-all"
+              className="flex-shrink-0"
             >
               <Send className="w-4 h-4" />
             </Button>
-          </div>
-          
-          {/* Student Success Message */}
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              💡 I'm here to help you succeed at University of Uyo!
-            </p>
           </div>
         </div>
       </div>
