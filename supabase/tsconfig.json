@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "types": ["https://deno.land/x/types@0.1.0/index.d.ts"]
+  },
+  "include": ["functions/**/*"]
+}

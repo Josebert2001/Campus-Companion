@@ -64,6 +64,39 @@ async function callGroqModel(
   return data.choices[0].message.content;
 }
 
+// Stream model output from Groq and return a ReadableStream that forwards chunks
+async function streamGroqModel(
+  model: string,
+  messages: any[],
+  temperature: number = 0.3
+): Promise<ReadableStream<Uint8Array>> {
+  const groqApiKey = Deno.env.get("GROQ_API_KEY");
+  if (!groqApiKey) throw new Error("GROQ_API_KEY not configured");
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${groqApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: 2000,
+      temperature,
+      top_p: 0.9,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const errTxt = await res.text().catch(() => "");
+    throw new Error(`Groq streaming failed: ${res.status} ${errTxt}`);
+  }
+
+  return res.body;
+}
+
 async function routeUserQuery(query: string, context: string): Promise<RoutingDecision> {
   const systemPrompt = `You are the intelligent routing system for Campus Companion, an AI study assistant for University of Uyo students.
 
@@ -365,7 +398,10 @@ Deno.serve(async (req: Request) => {
       user = userData?.user || null;
     }
 
-    const { message, context } = await req.json();
+  const body = await req.json();
+  const message = body.message;
+  const context = body.context;
+  const wantsStream = Boolean(body.stream) || (req.headers.get('accept') || '').includes('text/event-stream');
 
     if (!message || typeof message !== "string") {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -381,7 +417,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    let profile = null;
+  let profile: any = null;
     if (user) {
       const { data: profileData } = await supabase.from("profiles").select("full_name, course, year_of_study, university").eq("user_id", user.id).maybeSingle();
       profile = profileData;
@@ -393,6 +429,93 @@ Deno.serve(async (req: Request) => {
 
     console.log("Processing routed request for:", user?.id || "guest");
 
+    // If client requested streaming, attempt to stream the model output directly
+    if (wantsStream) {
+      // Decide routing first
+      const routing = await routeUserQuery(sanitizedMessage, sanitizedContext);
+
+      // Build agent-specific system prompt and choose model
+      let agentModel = AGENT_MODELS.study_helper;
+      let systemPrompt = "";
+      const profile = null; // Keep null for streaming metadata unless user profile is needed
+      const studentContext = userName
+        ? `Student Name: ${userName}\nUniversity: ${profile?.university || "University of Uyo"}`
+        : `Student Name: Student\nUniversity: University of Uyo`;
+
+      switch (routing.selected_agent) {
+        case "study_helper":
+          agentModel = AGENT_MODELS.study_helper;
+          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
+          break;
+        case "time_manager":
+          agentModel = AGENT_MODELS.time_manager;
+          systemPrompt = `You are the Time Manager, a productivity expert helping University of Uyo students organize their time and manage tasks.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nCreate practical schedules, prioritize tasks, and provide realistic time management strategies.`;
+          break;
+        case "researcher":
+          agentModel = AGENT_MODELS.researcher;
+          systemPrompt = `You are the Researcher, an academic research assistant helping University of Uyo students with research, sources, and citations.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nGuide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).`;
+          break;
+        case "motivator":
+          agentModel = AGENT_MODELS.motivator;
+          systemPrompt = `You are the Motivator, a compassionate support system for University of Uyo students facing academic stress.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.`;
+          break;
+        default:
+          agentModel = AGENT_MODELS.study_helper;
+          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
+      }
+
+      const messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: sanitizedMessage },
+      ];
+
+      try {
+        const modelStream = await streamGroqModel(agentModel, messages, 0.3);
+
+        // Create a ReadableStream to forward model chunks and append final metadata
+        const forwardStream = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            const reader = modelStream.getReader();
+            const decoder = new TextDecoder();
+            try {
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                if (value) controller.enqueue(value);
+              }
+            } catch (e) {
+              console.error('Error while streaming from model:', e);
+            } finally {
+              // At the end, enqueue a JSON metadata chunk so client can read routing/processing info
+              const meta = {
+                finish: true,
+                processing_type: 'routed_agent_stream',
+                routing: {
+                  selected_agent: routing.selected_agent,
+                  confidence: routing.confidence,
+                  reason: routing.reason,
+                },
+                timestamp: new Date().toISOString(),
+                student_context: {
+                  name: userName,
+                  university: profile?.university || 'University of Uyo',
+                },
+              };
+              const metaStr = '\n' + JSON.stringify(meta);
+              controller.enqueue(new TextEncoder().encode(metaStr));
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(forwardStream, { headers: { ...corsHeaders, 'Content-Type': 'text/plain; charset=utf-8' } });
+      } catch (streamErr) {
+        console.error('Streaming path failed, falling back to non-stream:', streamErr);
+        // fall through to non-stream behavior below
+      }
+    }
+
+    // Non-streaming behavior (existing path)
     const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile);
 
     return new Response(

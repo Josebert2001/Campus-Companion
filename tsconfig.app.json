@@ -27,4 +27,6 @@
     }
   },
   "include": ["src"]
+  ,
+  "exclude": ["supabase", "node_modules", "dist"]
 }
