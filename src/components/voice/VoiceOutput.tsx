@@ -23,50 +23,60 @@ export default function VoiceOutput({ text, disabled }: VoiceOutputProps) {
 
     try {
       setIsPlaying(true);
-      
-      const { data, error } = await supabase.functions.invoke('enhanced-voice', {
-        body: { 
-          text: text.slice(0, 4000), // Limit text length
-          action: 'synthesize',
-          voice: voice,
-          context: 'University of Uyo academic content'
-        }
-      });
 
-      if (error) throw error;
-      
-      const audioContent = data?.audioContent;
-      if (!audioContent) throw new Error('No audio content received');
-      
-      // Create audio blob and play
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(audioContent), c => c.charCodeAt(0))],
-        { type: 'audio/mpeg' }
-      );
-      
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audioElement = new Audio(audioUrl);
-      
-      audioElement.onended = () => {
+      // Check if browser supports speech synthesis
+      if (!('speechSynthesis' in window)) {
+        throw new Error("Speech synthesis not supported in this browser");
+      }
+
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text.slice(0, 4000));
+
+      // Configure voice settings
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to use a voice based on preference
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = null;
+
+      // Map voice preference to browser voice names
+      if (voice === 'nova' || voice === 'shimmer') {
+        selectedVoice = voices.find(v =>
+          v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Victoria')
+        );
+      } else if (voice === 'onyx') {
+        selectedVoice = voices.find(v =>
+          v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Alex')
+        );
+      }
+
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.startsWith('en'));
+      }
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      utterance.onend = () => {
         setIsPlaying(false);
         setAudio(null);
-        URL.revokeObjectURL(audioUrl);
       };
-      
-      audioElement.onerror = () => {
+
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
         setIsPlaying(false);
         setAudio(null);
-        URL.revokeObjectURL(audioUrl);
         toast.error("Audio playback failed");
       };
-      
-      setAudio(audioElement);
-      await audioElement.play();
-      
-      // Enhanced feedback
-      const voiceUsed = data?.voice_used || voice;
-      toast.success(`Playing with ${voiceUsed} voice`);
-      
+
+      window.speechSynthesis.speak(utterance);
+      toast.success("Playing...");
+
     } catch (error) {
       console.error('Text-to-speech error:', error);
       toast.error("Failed to generate speech. Please try again.");
@@ -75,11 +85,8 @@ export default function VoiceOutput({ text, disabled }: VoiceOutputProps) {
   };
 
   const stopSpeaking = () => {
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-      setAudio(null);
-    }
+    window.speechSynthesis.cancel();
+    setAudio(null);
     setIsPlaying(false);
   };
 

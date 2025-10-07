@@ -187,43 +187,50 @@ export default function VoiceConversation() {
     try {
       setIsSpeaking(true);
 
-      const { data, error } = await supabase.functions.invoke("enhanced-voice", {
-        body: {
-          text: text.slice(0, 4000),
-          action: "synthesize",
-          voice: "nova",
-          context: "University of Uyo academic voice conversation",
-        },
-      });
+      // Check if browser supports speech synthesis
+      if (!('speechSynthesis' in window)) {
+        throw new Error("Speech synthesis not supported in this browser");
+      }
 
-      if (error) throw error;
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
 
-      const audioContent = data?.audioContent;
-      if (!audioContent) throw new Error("No audio content received");
+      const utterance = new SpeechSynthesisUtterance(text);
 
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(audioContent), (c) => c.charCodeAt(0))],
-        { type: "audio/mpeg" }
+      // Configure voice settings
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to use a female voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice =>
+        voice.name.includes('Female') ||
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Victoria') ||
+        voice.gender === 'female'
       );
 
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audioElement = new Audio(audioUrl);
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      } else {
+        // Use default voice
+        const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+        if (englishVoice) utterance.voice = englishVoice;
+      }
 
-      audioElement.onended = () => {
+      utterance.onend = () => {
         setIsSpeaking(false);
-        currentAudioRef.current = null;
-        URL.revokeObjectURL(audioUrl);
       };
 
-      audioElement.onerror = () => {
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
         setIsSpeaking(false);
-        currentAudioRef.current = null;
-        URL.revokeObjectURL(audioUrl);
-        toast.error("Audio playback failed");
+        toast.error("Failed to speak response");
       };
 
-      currentAudioRef.current = audioElement;
-      await audioElement.play();
+      window.speechSynthesis.speak(utterance);
+      toast.success("Speaking...");
     } catch (error) {
       console.error("Text-to-speech error:", error);
       toast.error("Failed to generate speech.");
@@ -232,11 +239,7 @@ export default function VoiceConversation() {
   };
 
   const stopSpeaking = () => {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
-      currentAudioRef.current = null;
-    }
+    window.speechSynthesis.cancel();
     setIsSpeaking(false);
   };
 
