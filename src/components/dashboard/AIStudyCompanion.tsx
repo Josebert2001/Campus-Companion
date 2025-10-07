@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, Sparkles, Zap, Users, GraduationCap, ChevronDown } from "lucide-react";
+import { MessageCircle, Send, Sparkles, Zap, Users, GraduationCap, ChevronDown, Mic } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import AIResponseFormatter from "./AIResponseFormatter";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import VoiceInput from "@/components/voice/VoiceInput";
 import VoiceOutput from "@/components/voice/VoiceOutput";
 import ImageUpload from "@/components/vision/ImageUpload";
+import InstantVoiceChat from "@/components/voice/InstantVoiceChat";
 
 interface ChatMessage {
   id: string;
@@ -34,6 +35,7 @@ export default function AIStudyCompanion() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showInstantVoice, setShowInstantVoice] = useState(false);
 
   const handleSendMessage = async (message?: string, imageUrl?: string, isVoice?: boolean) => {
     const textToSend = message || inputValue;
@@ -365,6 +367,19 @@ export default function AIStudyCompanion() {
           </div>
         </div>
       </div>
+
+      {showInstantVoice && (
+        <InstantVoiceChat onClose={() => setShowInstantVoice(false)} />
+      )}
+
+      <Button
+        onClick={() => setShowInstantVoice(true)}
+        size="lg"
+        className="fixed bottom-20 right-6 h-16 w-16 rounded-full shadow-2xl hover:scale-110 transition-transform z-40 bg-gradient-to-br from-primary to-primary/80"
+        title="Start instant voice chat"
+      >
+        <Mic className="w-7 h-7" />
+      </Button>
     </div>
   );
 }
