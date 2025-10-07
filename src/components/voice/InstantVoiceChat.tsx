@@ -217,25 +217,35 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
     setState("speaking");
 
     try {
-      const { data, error } = await supabase.functions.invoke("enhanced-voice", {
-        body: {
-          text: text,
-          action: "synthesize",
-          voice: "nova",
-          context: "University of Uyo instant voice chat",
-        },
-      });
-
-      if (error || !data?.success) {
-        throw new Error("Speech synthesis failed");
+      // Check if browser supports speech synthesis
+      if (!('speechSynthesis' in window)) {
+        throw new Error("Speech synthesis not supported in this browser");
       }
 
-      const audioData = data.audioContent;
-      const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
-      currentAudioRef.current = audio;
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
 
-      audio.onended = () => {
-        currentAudioRef.current = null;
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // Configure voice settings
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to use a natural female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice =>
+        voice.name.includes('Female') ||
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Victoria') ||
+        voice.lang.startsWith('en')
+      );
+
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+
+      utterance.onend = () => {
         if (continuousMode) {
           setState("idle");
         } else {
@@ -243,13 +253,13 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
         }
       };
 
-      audio.onerror = () => {
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
         toast.error("Failed to play audio response");
-        currentAudioRef.current = null;
         setState("idle");
       };
 
-      await audio.play();
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
       console.error("Error speaking response:", error);
       toast.error("Could not speak the response");
@@ -258,6 +268,9 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
   };
 
   const cleanup = () => {
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;

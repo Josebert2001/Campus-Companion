@@ -208,30 +208,41 @@ export default function FullDuplexConversation({
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("enhanced-voice", {
-        body: {
-          text: text,
-          action: "synthesize",
-          voice: "nova",
-        },
-      });
-
-      if (error || !data?.success) {
-        throw new Error("Speech synthesis failed");
+      // Check if browser supports speech synthesis
+      if (!('speechSynthesis' in window)) {
+        throw new Error("Speech synthesis not supported in this browser");
       }
 
-      const audioData = data.audioContent;
-      const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
-      currentAudioRef.current = audio;
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
 
-      audio.onended = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // Configure voice settings
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to use a natural female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice =>
+        voice.name.includes('Female') ||
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Victoria') ||
+        voice.lang.startsWith('en')
+      );
+
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+
+      utterance.onend = () => {
         setIsSpeaking(false);
         setConversation((prev) =>
           prev.map((turn) =>
             turn.id === turnId ? { ...turn, isPlaying: false } : turn
           )
         );
-        currentAudioRef.current = null;
 
         if (mediaRecorderRef.current?.state === "paused") {
           audioChunksRef.current = [];
@@ -239,10 +250,10 @@ export default function FullDuplexConversation({
         }
       };
 
-      audio.onerror = () => {
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
         setIsSpeaking(false);
         toast.error("Failed to play audio response");
-        currentAudioRef.current = null;
 
         if (mediaRecorderRef.current?.state === "paused") {
           audioChunksRef.current = [];
@@ -250,7 +261,7 @@ export default function FullDuplexConversation({
         }
       };
 
-      await audio.play();
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
       console.error("Error speaking response:", error);
       setIsSpeaking(false);
@@ -264,6 +275,9 @@ export default function FullDuplexConversation({
   };
 
   const stopConversation = () => {
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
