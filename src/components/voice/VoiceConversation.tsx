@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { VoiceActivityDetector } from "@/utils/voiceActivityDetection";
 
 interface Message {
   id: string;
@@ -27,6 +28,9 @@ export default function VoiceConversation() {
   const audioChunksRef = useRef<Blob[]>([]);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const vadRef = useRef<VoiceActivityDetector | null>(null);
+  const silenceTimerRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,8 +70,11 @@ export default function VoiceConversation() {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,
         },
       });
+
+      streamRef.current = stream;
 
       mediaRecorderRef.current = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
@@ -78,6 +85,24 @@ export default function VoiceConversation() {
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
+
+      vadRef.current = new VoiceActivityDetector();
+      await vadRef.current.initialize(
+        stream,
+        () => {
+          console.log("Speech detected");
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+          }
+        },
+        () => {
+          console.log("Silence detected - auto stopping");
+          silenceTimerRef.current = window.setTimeout(() => {
+            stopRecording();
+          }, 1000);
+        }
+      );
 
       mediaRecorderRef.current.onstop = async () => {
         setIsProcessing(true);
@@ -159,12 +184,25 @@ export default function VoiceConversation() {
           setIsProcessing(false);
         }
 
-        stream.getTracks().forEach((track) => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+
+        if (vadRef.current) {
+          vadRef.current.stop();
+          vadRef.current = null;
+        }
+
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      toast.info("Listening... Speak now!");
+      toast.info("Listening... Will auto-stop when you finish speaking");
     } catch (error) {
       console.error("Microphone access error:", error);
       toast.error("Cannot access microphone. Please check permissions.");
@@ -274,7 +312,7 @@ export default function VoiceConversation() {
               <div>
                 <h3 className="text-xl font-semibold mb-2">Start a Voice Conversation</h3>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  Press and hold the microphone button to speak. The AI will respond with voice automatically.
+                  Click the microphone to start speaking. The system will automatically detect when you stop talking and process your message. The AI will respond with natural voice.
                 </p>
               </div>
             </div>
@@ -322,10 +360,7 @@ export default function VoiceConversation() {
               size="lg"
               variant={isRecording ? "destructive" : "default"}
               className={`rounded-full w-20 h-20 ${isRecording ? "animate-pulse" : ""}`}
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
+              onClick={isRecording ? stopRecording : startRecording}
               disabled={isProcessing || isSpeaking}
             >
               {isProcessing ? (
@@ -350,8 +385,8 @@ export default function VoiceConversation() {
 
           <p className="text-xs text-center text-muted-foreground">
             {isRecording
-              ? "Release to send"
-              : "Press and hold to speak"}
+              ? "Speaking... (auto-stops on silence)"
+              : "Click to start speaking"}
           </p>
         </div>
       </Card>

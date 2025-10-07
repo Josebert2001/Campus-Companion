@@ -122,48 +122,51 @@ async function transcribeWithGroq(request: VoiceRequest, routing: VoiceRouting):
   };
 }
 
-async function synthesizeWithOpenAI(request: VoiceRequest): Promise<SynthesisResult> {
+async function synthesizeWithElevenLabs(request: VoiceRequest): Promise<SynthesisResult> {
   if (!request.text) {
     throw new Error("Text required for speech synthesis");
   }
 
-  const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!openaiApiKey) {
-    throw new Error("OPENAI_API_KEY not configured");
+  const elevenLabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
+  if (!elevenLabsApiKey) {
+    throw new Error("ELEVENLABS_API_KEY not configured");
   }
 
-  let voice = request.voice || "alloy";
+  let voiceId = "21m00Tcm4TlvDq8ikWAM";
 
   if (!request.voice) {
     const textLower = request.text.toLowerCase();
     if (textLower.includes("formula") || textLower.includes("equation") || textLower.includes("mathematics")) {
-      voice = "echo";
+      voiceId = "pNInz6obpgDQGcFmaJgB";
     } else if (textLower.includes("explanation") || textLower.includes("concept")) {
-      voice = "nova";
+      voiceId = "21m00Tcm4TlvDq8ikWAM";
     } else if (textLower.includes("encouragement") || textLower.includes("motivation")) {
-      voice = "shimmer";
+      voiceId = "EXAVITQu4vr4xnSDxMaL";
     }
   }
 
-  const response = await fetch("https://api.openai.com/v1/audio/speech", {
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${openaiApiKey}`,
+      "xi-api-key": elevenLabsApiKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "tts-1-hd",
-      input: request.text.slice(0, 4000),
-      voice: voice,
-      response_format: "mp3",
-      speed: 1.0,
+      text: request.text.slice(0, 5000),
+      model_id: "eleven_turbo_v2_5",
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.5,
+        use_speaker_boost: true,
+      },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("OpenAI TTS error:", response.status, errorText);
-    throw new Error(`Speech synthesis failed: ${response.status}`);
+    console.error("ElevenLabs TTS error:", response.status, errorText);
+    throw new Error(`ElevenLabs speech synthesis failed: ${response.status}`);
   }
 
   const arrayBuffer = await response.arrayBuffer();
@@ -171,12 +174,59 @@ async function synthesizeWithOpenAI(request: VoiceRequest): Promise<SynthesisRes
 
   return {
     audioContent: base64Audio,
-    voice_used: voice,
+    voice_used: voiceId,
     processing_info: {
-      model_used: "tts-1-hd",
+      model_used: "eleven_turbo_v2_5",
       text_length: request.text.length,
       voice_selection: request.voice ? "user_selected" : "auto_selected",
       academic_optimized: true,
+      provider: "elevenlabs",
+    },
+  };
+}
+
+async function synthesizeWithGroqPlayAI(request: VoiceRequest): Promise<SynthesisResult> {
+  if (!request.text) {
+    throw new Error("Text required for speech synthesis");
+  }
+
+  const groqApiKey = Deno.env.get("GROQ_API_KEY");
+  if (!groqApiKey) {
+    throw new Error("GROQ_API_KEY not configured");
+  }
+
+  const response = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${groqApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "playai-tts",
+      input: request.text.slice(0, 4000),
+      voice: "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
+      response_format: "mp3",
+      speed: 1.0,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Groq PlayAI TTS error:", response.status, errorText);
+    throw new Error(`Groq PlayAI speech synthesis failed: ${response.status}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+  return {
+    audioContent: base64Audio,
+    voice_used: "playai-female",
+    processing_info: {
+      model_used: "playai-tts",
+      text_length: request.text.length,
+      academic_optimized: true,
+      provider: "groq-playai",
     },
   };
 }
@@ -235,7 +285,13 @@ Deno.serve(async (req) => {
         language: transcriptionResult.language,
       };
     } else {
-      const synthesisResult = await synthesizeWithOpenAI(request);
+      let synthesisResult: SynthesisResult;
+      try {
+        synthesisResult = await synthesizeWithElevenLabs(request);
+      } catch (elevenLabsError) {
+        console.warn("ElevenLabs failed, falling back to Groq PlayAI:", elevenLabsError);
+        synthesisResult = await synthesizeWithGroqPlayAI(request);
+      }
 
       result = {
         success: true,
