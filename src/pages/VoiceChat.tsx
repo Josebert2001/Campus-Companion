@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import VoiceConversation from "@/components/voice/VoiceConversation";
+import FullDuplexConversation from "@/components/voice/FullDuplexConversation";
 import { Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function VoiceChat() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [sessionId, setSessionId] = useState<string | undefined>();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,8 +55,42 @@ export default function VoiceChat() {
               </Button>
             </div>
           </header>
-          <main className="flex-1 overflow-hidden">
-            <VoiceConversation />
+          <main className="flex-1 overflow-auto p-6">
+            <div className="max-w-4xl mx-auto">
+              <Tabs defaultValue="hands-free" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="hands-free">
+                    Hands-Free Mode
+                  </TabsTrigger>
+                  <TabsTrigger value="push-to-talk">
+                    Push-to-Talk Mode
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="hands-free" className="space-y-4">
+                  <div className="text-center space-y-2 mb-6">
+                    <h2 className="text-2xl font-bold">Full-Duplex Voice Conversation</h2>
+                    <p className="text-muted-foreground">
+                      Speak naturally - AI automatically detects when you stop talking and responds
+                    </p>
+                  </div>
+                  <FullDuplexConversation
+                    sessionId={sessionId}
+                    onSessionChange={setSessionId}
+                  />
+                </TabsContent>
+
+                <TabsContent value="push-to-talk" className="space-y-4">
+                  <div className="text-center space-y-2 mb-6">
+                    <h2 className="text-2xl font-bold">Manual Voice Control</h2>
+                    <p className="text-muted-foreground">
+                      Click to record your voice and get AI responses
+                    </p>
+                  </div>
+                  <VoiceConversation />
+                </TabsContent>
+              </Tabs>
+            </div>
           </main>
         </div>
       </div>
