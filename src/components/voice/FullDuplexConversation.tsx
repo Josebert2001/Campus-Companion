@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Volume2, VolumeX, Loader as Loader2 } from "lucide-react";
+import { Mic, MicOff, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,9 +53,24 @@ export default function FullDuplexConversation({
       });
       mediaRecorderRef.current = mediaRecorder;
 
+      audioChunksRef.current = [];
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        if (audioChunksRef.current.length > 0) {
+          processAudio();
+        }
+
+        if (isActive && mediaRecorderRef.current) {
+          audioChunksRef.current = [];
+          if (mediaRecorderRef.current.state === "inactive") {
+            mediaRecorderRef.current.start();
+          }
         }
       };
 
@@ -65,19 +80,14 @@ export default function FullDuplexConversation({
       await vad.initialize(
         stream,
         () => {
-          console.log("Speech detected - starting recording");
+          console.log("Speech detected");
           setIsListening(true);
-          if (mediaRecorder.state === "inactive") {
-            audioChunksRef.current = [];
-            mediaRecorder.start();
-          }
         },
         () => {
-          console.log("Silence detected - stopping recording");
+          console.log("Silence detected - processing audio");
           setIsListening(false);
-          if (mediaRecorder.state === "recording") {
+          if (mediaRecorder.state === "recording" && !isSpeaking && !isProcessing) {
             mediaRecorder.stop();
-            processAudio();
           }
         }
       );
@@ -87,6 +97,7 @@ export default function FullDuplexConversation({
         setAudioLevel(level);
       }, 100);
 
+      mediaRecorder.start();
       setIsActive(true);
       toast.success("Voice conversation started - start speaking!");
     } catch (error) {
@@ -192,6 +203,10 @@ export default function FullDuplexConversation({
   const speakResponse = async (text: string, turnId: string) => {
     setIsSpeaking(true);
 
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.pause();
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("enhanced-voice", {
         body: {
@@ -217,12 +232,22 @@ export default function FullDuplexConversation({
           )
         );
         currentAudioRef.current = null;
+
+        if (mediaRecorderRef.current?.state === "paused") {
+          audioChunksRef.current = [];
+          mediaRecorderRef.current.resume();
+        }
       };
 
       audio.onerror = () => {
         setIsSpeaking(false);
         toast.error("Failed to play audio response");
         currentAudioRef.current = null;
+
+        if (mediaRecorderRef.current?.state === "paused") {
+          audioChunksRef.current = [];
+          mediaRecorderRef.current.resume();
+        }
       };
 
       await audio.play();
@@ -230,6 +255,11 @@ export default function FullDuplexConversation({
       console.error("Error speaking response:", error);
       setIsSpeaking(false);
       toast.error("Could not speak the response");
+
+      if (mediaRecorderRef.current?.state === "paused") {
+        audioChunksRef.current = [];
+        mediaRecorderRef.current.resume();
+      }
     }
   };
 
