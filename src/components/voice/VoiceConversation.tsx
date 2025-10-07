@@ -100,13 +100,23 @@ export default function VoiceConversation() {
           console.log("Silence detected - auto stopping");
           silenceTimerRef.current = window.setTimeout(() => {
             stopRecording();
-          }, 1000);
+          }, 300);
         }
       );
 
       mediaRecorderRef.current.onstop = async () => {
-        setIsProcessing(true);
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+        // Add user message immediately for instant feedback
+        const tempUserMessage: Message = {
+          id: Date.now().toString(),
+          role: "user",
+          content: "Processing...",
+          timestamp: new Date(),
+          isVoice: true,
+        };
+        setMessages((prev) => [...prev, tempUserMessage]);
+        setIsProcessing(true);
 
         try {
           const reader = new FileReader();
@@ -131,22 +141,32 @@ export default function VoiceConversation() {
 
             const transcribedText = transcribeData?.text || "";
 
-            // Add user message
-            const userMessage: Message = {
-              id: Date.now().toString(),
-              role: "user",
-              content: transcribedText,
-              timestamp: new Date(),
-              isVoice: true,
-            };
-            setMessages((prev) => [...prev, userMessage]);
+            // Update user message with transcription
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempUserMessage.id
+                  ? { ...m, content: transcribedText }
+                  : m
+              )
+            );
 
-            // Get AI response
+            // Show AI is thinking immediately
+            const thinkingMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: "assistant",
+              content: "Thinking...",
+              timestamp: new Date(),
+              isVoice: false,
+            };
+            setMessages((prev) => [...prev, thinkingMessage]);
+
+            // Get AI response (optimized for voice with shorter responses)
             const { data: aiData, error: aiError } = await supabase.functions.invoke("ai-chat", {
               body: {
                 message: transcribedText,
                 session_id: sessionId,
-                context: "Voice conversation with University of Uyo student",
+                context: "Voice conversation with University of Uyo student. Keep response concise and conversational (2-3 sentences max).",
+                voice_mode: true,
               },
             });
 
@@ -159,22 +179,24 @@ export default function VoiceConversation() {
               setSessionId(newSessionId);
             }
 
-            // Add AI message
-            const aiMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              role: "assistant",
-              content: aiResponse,
-              timestamp: new Date(),
-              isVoice: false,
-            };
-            setMessages((prev) => [...prev, aiMessage]);
+            // Update thinking message with actual response
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === thinkingMessage.id
+                  ? { ...m, content: aiResponse }
+                  : m
+              )
+            );
 
-            // Auto-speak response
+            // Auto-speak response (start immediately)
             if (autoSpeak) {
-              await speakText(aiResponse);
+              speakText(aiResponse).catch((err) => {
+                console.error("Speech error:", err);
+                toast.error("Couldn't play audio response");
+              });
             }
 
-            toast.success("Message processed!");
+            toast.success("✓");
           };
           reader.readAsDataURL(audioBlob);
         } catch (error) {

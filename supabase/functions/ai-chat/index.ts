@@ -154,7 +154,7 @@ Context: ${context}`;
   }
 }
 
-async function studyHelperAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
+async function studyHelperAgent(query: string, context: string, userName: string, profile?: any, history?: any[], voiceMode?: boolean): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student Name: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -163,12 +163,14 @@ Year: ${profile.year_of_study || "Not specified"}`
     : `Student Name: ${userName}
 University: University of Uyo`;
 
+  const voiceInstructions = voiceMode ? " IMPORTANT: Keep your response very brief and conversational - 2-3 sentences maximum. Speak naturally as if having a quick voice chat." : "";
+
   const systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.
 
 ${studentContext}
 Context: ${context}
 
-Provide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
+Provide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.${voiceInstructions}`;
 
   const messages = [{ role: "system", content: systemPrompt }];
 
@@ -193,7 +195,7 @@ Provide clear, helpful explanations using examples and step-by-step guidance. Be
   };
 }
 
-async function timeManagerAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
+async function timeManagerAgent(query: string, context: string, userName: string, profile?: any, history?: any[], voiceMode?: boolean): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -201,12 +203,14 @@ Course: ${profile.course || "Not specified"}
 Year: ${profile.year_of_study || "Not specified"}`
     : `Student: ${userName}`;
 
+  const voiceInstructions = voiceMode ? " IMPORTANT: Keep your response very brief and conversational - 2-3 sentences maximum. Speak naturally as if having a quick voice chat." : "";
+
   const systemPrompt = `You are the Time Manager, a productivity expert helping University of Uyo students organize their time and manage tasks.
 
 ${studentContext}
 Context: ${context}
 
-Create practical schedules, prioritize tasks, and provide realistic time management strategies.`;
+Create practical schedules, prioritize tasks, and provide realistic time management strategies.${voiceInstructions}`;
 
   const messages = [{ role: "system", content: systemPrompt }];
   if (history && history.length > 0) messages.push(...history);
@@ -221,7 +225,7 @@ Create practical schedules, prioritize tasks, and provide realistic time managem
   };
 }
 
-async function researcherAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
+async function researcherAgent(query: string, context: string, userName: string, profile?: any, history?: any[], voiceMode?: boolean): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -229,12 +233,14 @@ Course: ${profile.course || "Not specified"}
 Year: ${profile.year_of_study || "Not specified"}`
     : `Student: ${userName}`;
 
+  const voiceInstructions = voiceMode ? " IMPORTANT: Keep your response very brief and conversational - 2-3 sentences maximum. Speak naturally as if having a quick voice chat." : "";
+
   const systemPrompt = `You are the Researcher, an academic research assistant helping University of Uyo students with research, sources, and citations.
 
 ${studentContext}
 Context: ${context}
 
-Guide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).`;
+Guide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).${voiceInstructions}`;
 
   const messages = [{ role: "system", content: systemPrompt }];
   if (history && history.length > 0) messages.push(...history);
@@ -249,7 +255,7 @@ Guide research methodology, help find credible sources, and teach proper academi
   };
 }
 
-async function motivatorAgent(query: string, context: string, userName: string, profile?: any, history?: any[]): Promise<AgentResponse> {
+async function motivatorAgent(query: string, context: string, userName: string, profile?: any, history?: any[], voiceMode?: boolean): Promise<AgentResponse> {
   const studentContext = profile
     ? `Student: ${userName}
 University: ${profile.university || "University of Uyo"}
@@ -257,12 +263,14 @@ Course: ${profile.course || "Not specified"}
 Year: ${profile.year_of_study || "Not specified"}`
     : `Student: ${userName}`;
 
+  const voiceInstructions = voiceMode ? " IMPORTANT: Keep your response very brief and conversational - 2-3 sentences maximum. Speak naturally as if having a quick voice chat." : "";
+
   const systemPrompt = `You are the Motivator, a compassionate support system for University of Uyo students facing academic stress.
 
 ${studentContext}
 Context: ${context}
 
-Provide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.`;
+Provide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.${voiceInstructions}`;
 
   const messages = [{ role: "system", content: systemPrompt }];
   if (history && history.length > 0) messages.push(...history);
@@ -308,7 +316,8 @@ async function processWithRouting(
   context: string,
   userName: string,
   userProfile?: any,
-  history?: any[]
+  history?: any[],
+  voiceMode?: boolean
 ): Promise<{ response: string; routing: RoutingDecision; processing_type: string }> {
   try {
     console.log("Starting routed processing for:", userName);
@@ -320,30 +329,40 @@ async function processWithRouting(
 
     switch (routing.selected_agent) {
       case "study_helper":
-        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history);
+        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history, voiceMode);
         break;
       case "time_manager":
-        agentResponse = await timeManagerAgent(query, context, userName, userProfile, history);
+        agentResponse = await timeManagerAgent(query, context, userName, userProfile, history, voiceMode);
         break;
       case "researcher":
-        agentResponse = await researcherAgent(query, context, userName, userProfile, history);
+        agentResponse = await researcherAgent(query, context, userName, userProfile, history, voiceMode);
         break;
       case "motivator":
-        agentResponse = await motivatorAgent(query, context, userName, userProfile, history);
+        agentResponse = await motivatorAgent(query, context, userName, userProfile, history, voiceMode);
         break;
       default:
-        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history);
+        agentResponse = await studyHelperAgent(query, context, userName, userProfile, history, voiceMode);
     }
 
     console.log("Agent processing completed");
 
-    const unifiedResponse = await unifyResponse(agentResponse, query, userName);
-    console.log("Response unified successfully");
+    let finalResponse = agentResponse.content;
+
+    if (voiceMode) {
+      const maxLength = 400;
+      if (finalResponse.length > maxLength) {
+        finalResponse = finalResponse.slice(0, maxLength).split('.')[0] + '.';
+      }
+    } else {
+      finalResponse = await unifyResponse(agentResponse, query, userName);
+    }
+
+    console.log("Response processed successfully");
 
     return {
-      response: unifiedResponse,
+      response: finalResponse,
       routing,
-      processing_type: "routed_agent",
+      processing_type: voiceMode ? "voice_routed_agent" : "routed_agent",
     };
   } catch (error) {
     console.error("Routed processing error:", error);
@@ -399,6 +418,7 @@ Deno.serve(async (req: Request) => {
   const message = body.message;
   const context = body.context;
   const sessionId = body.session_id;
+  const voiceMode = Boolean(body.voice_mode);
   const wantsStream = Boolean(body.stream) || (req.headers.get('accept') || '').includes('text/event-stream');
 
     if (!message || typeof message !== "string") {
@@ -472,26 +492,28 @@ Deno.serve(async (req: Request) => {
         ? `Student Name: ${userName}\nUniversity: ${profile?.university || "University of Uyo"}`
         : `Student Name: Student\nUniversity: University of Uyo`;
 
+      const voiceInstructions = voiceMode ? " IMPORTANT: Keep your response very brief and conversational - 2-3 sentences maximum. Speak naturally as if having a quick voice chat." : "";
+
       switch (routing.selected_agent) {
         case "study_helper":
           agentModel = AGENT_MODELS.study_helper;
-          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
+          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.${voiceInstructions}`;
           break;
         case "time_manager":
           agentModel = AGENT_MODELS.time_manager;
-          systemPrompt = `You are the Time Manager, a productivity expert helping University of Uyo students organize their time and manage tasks.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nCreate practical schedules, prioritize tasks, and provide realistic time management strategies.`;
+          systemPrompt = `You are the Time Manager, a productivity expert helping University of Uyo students organize their time and manage tasks.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nCreate practical schedules, prioritize tasks, and provide realistic time management strategies.${voiceInstructions}`;
           break;
         case "researcher":
           agentModel = AGENT_MODELS.researcher;
-          systemPrompt = `You are the Researcher, an academic research assistant helping University of Uyo students with research, sources, and citations.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nGuide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).`;
+          systemPrompt = `You are the Researcher, an academic research assistant helping University of Uyo students with research, sources, and citations.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nGuide research methodology, help find credible sources, and teach proper academic citation (APA, MLA, Chicago).${voiceInstructions}`;
           break;
         case "motivator":
           agentModel = AGENT_MODELS.motivator;
-          systemPrompt = `You are the Motivator, a compassionate support system for University of Uyo students facing academic stress.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.`;
+          systemPrompt = `You are the Motivator, a compassionate support system for University of Uyo students facing academic stress.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide emotional support, encouragement, and practical strategies to help students overcome obstacles and maintain mental wellness.${voiceInstructions}`;
           break;
         default:
           agentModel = AGENT_MODELS.study_helper;
-          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.`;
+          systemPrompt = `You are the Study Helper, a patient and knowledgeable academic tutor for University of Uyo students.\n\n${studentContext}\nContext: ${sanitizedContext}\n\nProvide clear, helpful explanations using examples and step-by-step guidance. Be warm, encouraging, and conversational.${voiceInstructions}`;
       }
 
       const messages = [
@@ -542,7 +564,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile, conversationHistory);
+    const { response, routing, processing_type } = await processWithRouting(sanitizedMessage, sanitizedContext, userName, profile, conversationHistory, voiceMode);
 
     // Save messages to database if user is authenticated and has session
     if (user && currentSessionId) {

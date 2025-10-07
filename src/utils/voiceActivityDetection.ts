@@ -6,9 +6,9 @@ export class VoiceActivityDetector {
   private animationFrame: number | null = null;
   private silenceTimeout: number | null = null;
 
-  private readonly SILENCE_THRESHOLD = 30;
-  private readonly SILENCE_DURATION = 1500;
-  private readonly SPEECH_THRESHOLD = 40;
+  private readonly SILENCE_THRESHOLD = 25;
+  private readonly SILENCE_DURATION = 800;
+  private readonly SPEECH_THRESHOLD = 35;
 
   private onSpeechStart: (() => void) | null = null;
   private onSpeechEnd: (() => void) | null = null;
