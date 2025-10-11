@@ -90,24 +90,28 @@ export default function VoiceConversation() {
       await vadRef.current.initialize(
         stream,
         () => {
-          console.log("Speech detected");
           if (silenceTimerRef.current) {
             clearTimeout(silenceTimerRef.current);
             silenceTimerRef.current = null;
           }
         },
         () => {
-          console.log("Silence detected - auto stopping");
-          silenceTimerRef.current = window.setTimeout(() => {
-            stopRecording();
-          }, 300);
+          if (!isProcessing && !isSpeaking && mediaRecorderRef.current?.state === "recording") {
+            silenceTimerRef.current = window.setTimeout(() => {
+              stopRecording();
+            }, 200);
+          }
         }
       );
 
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
 
-        // Add user message immediately for instant feedback
+        if (audioBlob.size < 1000) {
+          toast.error("Audio too short, please speak longer");
+          return;
+        }
+
         const tempUserMessage: Message = {
           id: Date.now().toString(),
           role: "user",

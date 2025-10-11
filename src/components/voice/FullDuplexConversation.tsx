@@ -80,13 +80,13 @@ export default function FullDuplexConversation({
       await vad.initialize(
         stream,
         () => {
-          console.log("Speech detected");
-          setIsListening(true);
+          if (!isSpeaking && !isProcessing) {
+            setIsListening(true);
+          }
         },
         () => {
-          console.log("Silence detected - processing audio");
           setIsListening(false);
-          if (mediaRecorder.state === "recording" && !isSpeaking && !isProcessing) {
+          if (mediaRecorder.state === "recording" && !isSpeaking && !isProcessing && isActive) {
             mediaRecorder.stop();
           }
         }
@@ -109,10 +109,15 @@ export default function FullDuplexConversation({
   const processAudio = async () => {
     if (audioChunksRef.current.length === 0) return;
 
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+    if (audioBlob.size < 1000) {
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
       const reader = new FileReader();
 
       reader.onloadend = async () => {

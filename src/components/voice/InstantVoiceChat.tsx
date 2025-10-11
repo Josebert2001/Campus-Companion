@@ -81,8 +81,13 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
       };
 
       mediaRecorder.onstop = () => {
-        if (audioChunksRef.current.length > 0 && state !== "speaking") {
-          processAudio();
+        if (audioChunksRef.current.length > 0 && state !== "speaking" && state !== "processing") {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          if (audioBlob.size > 1000) {
+            processAudio();
+          } else {
+            setState("idle");
+          }
         }
         audioChunksRef.current = [];
       };
@@ -93,7 +98,7 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
       await vad.initialize(
         stream,
         () => {
-          if (state === "idle" || state === "initializing") {
+          if ((state === "idle" || state === "initializing") && !currentAudioRef.current) {
             setState("listening");
             if (mediaRecorder.state === "inactive") {
               audioChunksRef.current = [];
@@ -102,7 +107,7 @@ export default function InstantVoiceChat({ onClose }: InstantVoiceChatProps) {
           }
         },
         () => {
-          if (state === "listening" && mediaRecorder.state === "recording") {
+          if (state === "listening" && mediaRecorder.state === "recording" && !currentAudioRef.current) {
             mediaRecorder.stop();
           }
         }
